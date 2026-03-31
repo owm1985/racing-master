@@ -3,17 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lotto Number Generator</title>
+    <title>Neon Stack Tetris</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="container">
-        <h1>Lotto Number Generator</h1>
-        <div id="numbers" class="numbers-container">
-            <!-- Numbers will be generated here -->
-        </div>
-        <button id="generate">Generate Numbers</button>
+    <main class="layout">
+        <section class="hero">
+            <p class="eyebrow">Arcade Drop</p>
+            <h1>Neon Stack</h1>
+            <p class="tagline">Clear lines, speed up, and keep the board alive.</p>
+            <div class="controls-card">
+                <p><strong>Keyboard</strong></p>
+                <p>Left/Right: Move</p>
+                <p>Up or X: Rotate</p>
+                <p>Down: Soft Drop</p>
+                <p>Space: Hard Drop</p>
+                <p>P: Pause</p>
+            </div>
+        </section>
+
+        <section class="game-shell">
+            <div class="board-wrap">
+                <canvas id="board" width="300" height="600" aria-label="Tetris board"></canvas>
+                <div id="message" class="message hidden"></div>
+            </div>
+
+            <aside class="sidebar">
+                <div class="panel">
+                    <span class="label">Score</span>
+                    <strong id="score">0</strong>
+                </div>
+                <div class="panel">
+                    <span class="label">Lines</span>
+                    <strong id="lines">0</strong>
+                </div>
+                <div class="panel">
+                    <span class="label">Level</span>
+                    <strong id="level">1</strong>
+                </div>
+                <div class="panel">
+                    <span class="label">Next</span>
+                    <canvas id="next-piece" width="120" height="120" aria-label="Next piece"></canvas>
+                </div>
+                <button id="restart" class="action">Restart Game</button>
+                <button id="pause" class="action secondary">Pause</button>
+            </aside>
+        </section>
+    </main>
+
+    <div class="mobile-controls" aria-label="Touch controls">
+        <button data-action="left">Left</button>
+        <button data-action="rotate">Rotate</button>
+        <button data-action="right">Right</button>
+        <button data-action="down">Down</button>
+        <button data-action="drop" class="wide">Drop</button>
     </div>
+
     <script src="main.js"></script>
 </body>
 </html>
