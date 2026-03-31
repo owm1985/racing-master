@@ -4,6 +4,7 @@ const BLOCK_SIZE = 30;
 const LINES_PER_LEVEL = 10;
 const DROP_SPEEDS = [800, 720, 630, 550, 470, 380, 300, 220, 160, 110];
 const LINE_SCORES = [0, 100, 300, 500, 800];
+const THEME_STORAGE_KEY = "neon-stack-theme";
 
 const boardCanvas = document.getElementById("board");
 const boardCtx = boardCanvas.getContext("2d");
@@ -16,6 +17,7 @@ const levelNode = document.getElementById("level");
 const messageNode = document.getElementById("message");
 const restartButton = document.getElementById("restart");
 const pauseButton = document.getElementById("pause");
+const themeToggleButton = document.getElementById("theme-toggle");
 const mobileControls = document.querySelector(".mobile-controls");
 
 const COLORS = {
@@ -77,6 +79,7 @@ let dropAccumulator;
 let animationFrameId;
 let isPaused;
 let isGameOver;
+let currentTheme = "dark";
 
 function createBoard() {
     return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -96,6 +99,41 @@ function randomPiece() {
         x: Math.floor((COLS - SHAPES[type][0].length) / 2),
         y: -1
     };
+}
+
+function getStoredTheme() {
+    try {
+        const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
+        if (storedTheme === "light" || storedTheme === "dark") {
+            return storedTheme;
+        }
+    } catch (error) {
+        return "dark";
+    }
+
+    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+}
+
+function getThemeValue(name) {
+    return getComputedStyle(document.body).getPropertyValue(name).trim();
+}
+
+function setTheme(theme) {
+    currentTheme = theme;
+    document.body.dataset.theme = theme;
+    themeToggleButton.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
+    themeToggleButton.setAttribute("aria-pressed", String(theme === "light"));
+
+    try {
+        localStorage.setItem(THEME_STORAGE_KEY, theme);
+    } catch (error) {
+    }
+
+    draw();
+}
+
+function toggleTheme() {
+    setTheme(currentTheme === "dark" ? "light" : "dark");
 }
 
 function resetGame() {
@@ -332,7 +370,7 @@ function hideMessage() {
 function drawCell(ctx, x, y, color, size) {
     ctx.fillStyle = color;
     ctx.fillRect(x * size, y * size, size, size);
-    ctx.strokeStyle = "rgba(255, 255, 255, 0.14)";
+    ctx.strokeStyle = getThemeValue("--cell-stroke");
     ctx.lineWidth = 2;
     ctx.strokeRect(x * size + 1, y * size + 1, size - 2, size - 2);
 }
@@ -388,14 +426,21 @@ function drawNextPiece() {
 
 function draw() {
     drawBoard();
+    if (!activePiece) {
+        return;
+    }
     if (!isGameOver) {
         drawGhost();
-        drawPiece(boardCtx, activePiece, BLOCK_SIZE);
     }
+    drawPiece(boardCtx, activePiece, BLOCK_SIZE);
     drawNextPiece();
 }
 
 document.addEventListener("keydown", (event) => {
+    if (["ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp", "Space"].includes(event.code)) {
+        event.preventDefault();
+    }
+
     if (event.repeat && event.code !== "ArrowDown") {
         return;
     }
@@ -415,11 +460,13 @@ document.addEventListener("keydown", (event) => {
             tryRotate();
             break;
         case "Space":
-            event.preventDefault();
             hardDrop();
             break;
         case "KeyP":
             togglePause();
+            break;
+        case "KeyT":
+            toggleTheme();
             break;
         default:
             break;
@@ -428,6 +475,7 @@ document.addEventListener("keydown", (event) => {
 
 restartButton.addEventListener("click", resetGame);
 pauseButton.addEventListener("click", togglePause);
+themeToggleButton.addEventListener("click", toggleTheme);
 
 mobileControls.addEventListener("click", (event) => {
     const button = event.target.closest("button");
@@ -449,4 +497,5 @@ mobileControls.addEventListener("click", (event) => {
     }
 });
 
+setTheme(getStoredTheme());
 resetGame();

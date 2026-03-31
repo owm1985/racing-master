@@ -11,7 +11,7 @@
         <section class="hero">
             <p class="eyebrow">Arcade Drop</p>
             <h1>Neon Stack</h1>
-            <p class="tagline">Clear lines, speed up, and keep the board alive.</p>
+            <p class="tagline">Clear lines, speed up, and switch between dark and light play modes.</p>
             <div class="controls-card">
                 <p><strong>Keyboard</strong></p>
                 <p>Left/Right: Move</p>
@@ -29,6 +29,7 @@
             </div>
 
             <aside class="sidebar">
+                <button id="theme-toggle" class="action theme-toggle" type="button" aria-pressed="false">Light Mode</button>
                 <div class="panel">
                     <span class="label">Score</span>
                     <strong id="score">0</strong>
@@ -45,18 +46,18 @@
                     <span class="label">Next</span>
                     <canvas id="next-piece" width="120" height="120" aria-label="Next piece"></canvas>
                 </div>
-                <button id="restart" class="action">Restart Game</button>
-                <button id="pause" class="action secondary">Pause</button>
+                <button id="restart" class="action" type="button">Restart Game</button>
+                <button id="pause" class="action secondary" type="button">Pause</button>
             </aside>
         </section>
     </main>
 
     <div class="mobile-controls" aria-label="Touch controls">
-        <button data-action="left">Left</button>
-        <button data-action="rotate">Rotate</button>
-        <button data-action="right">Right</button>
-        <button data-action="down">Down</button>
-        <button data-action="drop" class="wide">Drop</button>
+        <button data-action="left" type="button">Left</button>
+        <button data-action="rotate" type="button">Rotate</button>
+        <button data-action="right" type="button">Right</button>
+        <button data-action="down" type="button">Down</button>
+        <button data-action="drop" class="wide" type="button">Drop</button>
     </div>
 
     <script src="main.js"></script>

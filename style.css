@@ -2,12 +2,47 @@
     --bg: #09111f;
     --bg-accent: #13213b;
     --panel: rgba(9, 17, 31, 0.82);
+    --panel-solid: #0b1729;
     --line: rgba(161, 196, 253, 0.18);
     --text: #ecf7ff;
     --muted: #95abc7;
     --glow: #59f0ff;
     --glow-2: #ffd166;
-    --danger: #ff5d73;
+    --button-text: #04111e;
+    --shadow: rgba(0, 0, 0, 0.3);
+    --overlay: rgba(5, 10, 18, 0.78);
+    --touch-bg: rgba(11, 23, 41, 0.78);
+    --touch-drop: rgba(89, 240, 255, 0.16);
+    --board-grid: rgba(255, 255, 255, 0.04);
+    --board-top: #09111f;
+    --board-bottom: #0d1830;
+    --cell-stroke: rgba(255, 255, 255, 0.14);
+}
+
+body[data-theme="light"] {
+    --bg: #f4efe2;
+    --bg-accent: #dce9ff;
+    --panel: rgba(255, 252, 245, 0.9);
+    --panel-solid: #fffaf0;
+    --line: rgba(30, 52, 84, 0.14);
+    --text: #17253d;
+    --muted: #55657f;
+    --glow: #1177cc;
+    --glow-2: #ff9f4a;
+    --button-text: #ffffff;
+    --shadow: rgba(36, 52, 74, 0.16);
+    --overlay: rgba(255, 250, 240, 0.82);
+    --touch-bg: rgba(255, 252, 245, 0.92);
+    --touch-drop: rgba(17, 119, 204, 0.12);
+    --board-grid: rgba(23, 37, 61, 0.08);
+    --board-top: #f8fbff;
+    --board-bottom: #e3eefc;
+    --cell-stroke: rgba(23, 37, 61, 0.14);
+}
+
+html {
+    height: 100%;
+    overflow: hidden;
 }
 
 * {
@@ -17,17 +52,21 @@
 body {
     margin: 0;
     min-height: 100vh;
+    overflow: hidden;
+    overscroll-behavior: none;
+    touch-action: manipulation;
     font-family: "Trebuchet MS", "Segoe UI", sans-serif;
     color: var(--text);
     background:
-        radial-gradient(circle at top, rgba(89, 240, 255, 0.14), transparent 30%),
-        radial-gradient(circle at bottom right, rgba(255, 209, 102, 0.12), transparent 26%),
+        radial-gradient(circle at top, color-mix(in srgb, var(--glow) 22%, transparent), transparent 30%),
+        radial-gradient(circle at bottom right, color-mix(in srgb, var(--glow-2) 18%, transparent), transparent 26%),
         linear-gradient(135deg, var(--bg), var(--bg-accent));
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     padding: 24px;
+    transition: background 180ms ease, color 180ms ease;
 }
 
 .layout {
@@ -63,7 +102,7 @@ body {
 .tagline {
     color: var(--muted);
     font-size: 1.05rem;
-    max-width: 28ch;
+    max-width: 30ch;
     margin-top: 14px;
 }
 
@@ -72,7 +111,7 @@ body {
     padding: 18px;
     border: 1px solid var(--line);
     border-radius: 18px;
-    background: rgba(11, 23, 41, 0.55);
+    background: color-mix(in srgb, var(--panel-solid) 82%, transparent);
     backdrop-filter: blur(10px);
     display: grid;
     gap: 10px;
@@ -89,7 +128,7 @@ body {
 .panel,
 .action {
     border: 1px solid var(--line);
-    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.3);
+    box-shadow: 0 18px 40px var(--shadow);
 }
 
 .board-wrap {
@@ -106,9 +145,9 @@ body {
     width: 100%;
     height: auto;
     background:
-        linear-gradient(rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(255, 255, 255, 0.04) 1px, transparent 1px),
-        linear-gradient(180deg, #09111f, #0d1830);
+        linear-gradient(var(--board-grid) 1px, transparent 1px),
+        linear-gradient(90deg, var(--board-grid) 1px, transparent 1px),
+        linear-gradient(180deg, var(--board-top), var(--board-bottom));
     background-size: 30px 30px, 30px 30px, auto;
     border-radius: 18px;
 }
@@ -119,7 +158,7 @@ body {
     display: grid;
     place-items: center;
     border-radius: 18px;
-    background: rgba(5, 10, 18, 0.78);
+    background: var(--overlay);
     text-align: center;
     font-size: 1.6rem;
     font-weight: 700;
@@ -161,12 +200,17 @@ body {
     font: inherit;
     font-weight: 700;
     cursor: pointer;
-    color: #04111e;
+    color: var(--button-text);
     background: linear-gradient(135deg, var(--glow), #a1c4fd);
 }
 
 .action.secondary {
     background: linear-gradient(135deg, var(--glow-2), #ff9f68);
+}
+
+.theme-toggle {
+    background: linear-gradient(135deg, color-mix(in srgb, var(--panel-solid) 80%, white), color-mix(in srgb, var(--glow) 45%, white));
+    color: var(--text);
 }
 
 .mobile-controls {
@@ -180,16 +224,18 @@ body {
 .mobile-controls button {
     border: 1px solid var(--line);
     border-radius: 16px;
-    background: rgba(11, 23, 41, 0.78);
+    background: var(--touch-bg);
     color: var(--text);
     padding: 14px 10px;
     font: inherit;
     font-weight: 700;
+    touch-action: manipulation;
+    box-shadow: 0 18px 40px var(--shadow);
 }
 
 .mobile-controls .wide {
     grid-column: span 4;
-    background: rgba(89, 240, 255, 0.16);
+    background: var(--touch-drop);
 }
 
 @media (max-width: 860px) {
