@@ -1,501 +1,328 @@
-const COLS = 10;
-const ROWS = 20;
-const BLOCK_SIZE = 30;
-const LINES_PER_LEVEL = 10;
-const DROP_SPEEDS = [800, 720, 630, 550, 470, 380, 300, 220, 160, 110];
-const LINE_SCORES = [0, 100, 300, 500, 800];
-const THEME_STORAGE_KEY = "neon-stack-theme";
+const GAME_TIME = 75;
+const MATCH_DELAY_MS = 760;
+const BEST_SCORE_KEY = "pikachu-match-best-score";
 
-const boardCanvas = document.getElementById("board");
-const boardCtx = boardCanvas.getContext("2d");
-const nextCanvas = document.getElementById("next-piece");
-const nextCtx = nextCanvas.getContext("2d");
+const CHARACTERS = [
+    {
+        id: "pikachu",
+        name: "피카츄",
+        type: "전기 타입 / 번개 에이스",
+        badge: "⚡",
+        gradient: ["#ffe25c", "#ffb43f"]
+    },
+    {
+        id: "raichu",
+        name: "라이츄",
+        type: "전기 타입 / 스피드 파워",
+        badge: "⚡",
+        gradient: ["#ffbf59", "#ef7f33"]
+    },
+    {
+        id: "charmander",
+        name: "파이리",
+        type: "불꽃 타입 / 스타터 화력",
+        badge: "🔥",
+        gradient: ["#ff9b59", "#ef5a3b"]
+    },
+    {
+        id: "squirtle",
+        name: "꼬부기",
+        type: "물 타입 / 단단한 수비",
+        badge: "💧",
+        gradient: ["#82d3ff", "#3d8df5"]
+    },
+    {
+        id: "butterfree",
+        name: "버터플",
+        type: "벌레/비행 타입 / 공중 제압",
+        badge: "🦋",
+        gradient: ["#bc92ff", "#7f67f3"]
+    },
+    {
+        id: "slowbro",
+        name: "야도란",
+        type: "물/에스퍼 타입 / 느긋한 탱커",
+        badge: "🌊",
+        gradient: ["#ff92bf", "#8d6df1"]
+    },
+    {
+        id: "pidgeot",
+        name: "피존투",
+        type: "비행 타입 / 하늘의 추격자",
+        badge: "🪶",
+        gradient: ["#d6b47f", "#8f6a48"]
+    },
+    {
+        id: "koffing",
+        name: "또가스",
+        type: "독 타입 / 혼란 장인",
+        badge: "☁️",
+        gradient: ["#a88cff", "#6d56c9"]
+    },
+    {
+        id: "snorlax",
+        name: "잠만보",
+        type: "노말 타입 / 묵직한 마무리",
+        badge: "💤",
+        gradient: ["#7ec9b6", "#386e72"]
+    },
+    {
+        id: "bulbasaur",
+        name: "이상해씨",
+        type: "풀 타입 / 밸런스 스타터",
+        badge: "🌿",
+        gradient: ["#8ddb91", "#4a9f61"]
+    }
+];
 
+const boardNode = document.getElementById("game-board");
+const partyListNode = document.getElementById("party-list");
+const spotlightBadgeNode = document.getElementById("spotlight-badge");
+const spotlightNameNode = document.getElementById("spotlight-name");
+const spotlightTypeNode = document.getElementById("spotlight-type");
+const statusTextNode = document.getElementById("status-text");
+const statusSubtextNode = document.getElementById("status-subtext");
 const scoreNode = document.getElementById("score");
-const linesNode = document.getElementById("lines");
-const levelNode = document.getElementById("level");
-const messageNode = document.getElementById("message");
-const restartButton = document.getElementById("restart");
-const pauseButton = document.getElementById("pause");
-const themeToggleButton = document.getElementById("theme-toggle");
-const mobileControls = document.querySelector(".mobile-controls");
+const bestScoreNode = document.getElementById("best-score");
+const timeLeftNode = document.getElementById("time-left");
+const comboNode = document.getElementById("combo");
+const matchesNode = document.getElementById("matches");
+const cardsLeftNode = document.getElementById("cards-left");
+const restartButton = document.getElementById("restart-button");
+const shuffleButton = document.getElementById("shuffle-button");
+const overlayNode = document.getElementById("result-overlay");
+const resultTitleNode = document.getElementById("result-title");
+const resultMessageNode = document.getElementById("result-message");
+const playAgainButton = document.getElementById("play-again-button");
 
-const COLORS = {
-    I: "#59f0ff",
-    J: "#4d7cff",
-    L: "#ff9f68",
-    O: "#ffd166",
-    S: "#7ae582",
-    T: "#d983ff",
-    Z: "#ff5d73"
-};
+let deck = [];
+let flippedCards = [];
+let matchedIds = new Set();
+let score = 0;
+let bestScore = 0;
+let combo = 0;
+let matches = 0;
+let timeLeft = GAME_TIME;
+let timerId = null;
+let lockBoard = false;
+let gameActive = true;
 
-const SHAPES = {
-    I: [
-        [0, 0, 0, 0],
-        [1, 1, 1, 1],
-        [0, 0, 0, 0],
-        [0, 0, 0, 0]
-    ],
-    J: [
-        [1, 0, 0],
-        [1, 1, 1],
-        [0, 0, 0]
-    ],
-    L: [
-        [0, 0, 1],
-        [1, 1, 1],
-        [0, 0, 0]
-    ],
-    O: [
-        [1, 1],
-        [1, 1]
-    ],
-    S: [
-        [0, 1, 1],
-        [1, 1, 0],
-        [0, 0, 0]
-    ],
-    T: [
-        [0, 1, 0],
-        [1, 1, 1],
-        [0, 0, 0]
-    ],
-    Z: [
-        [1, 1, 0],
-        [0, 1, 1],
-        [0, 0, 0]
-    ]
-};
+function shuffle(array) {
+    const copied = [...array];
 
-let board;
-let activePiece;
-let nextPiece;
-let score;
-let linesCleared;
-let level;
-let lastTime;
-let dropAccumulator;
-let animationFrameId;
-let isPaused;
-let isGameOver;
-let currentTheme = "dark";
-
-function createBoard() {
-    return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
-}
-
-function cloneMatrix(matrix) {
-    return matrix.map((row) => [...row]);
-}
-
-function randomPiece() {
-    const types = Object.keys(SHAPES);
-    const type = types[Math.floor(Math.random() * types.length)];
-    return {
-        type,
-        color: COLORS[type],
-        matrix: cloneMatrix(SHAPES[type]),
-        x: Math.floor((COLS - SHAPES[type][0].length) / 2),
-        y: -1
-    };
-}
-
-function getStoredTheme() {
-    try {
-        const storedTheme = localStorage.getItem(THEME_STORAGE_KEY);
-        if (storedTheme === "light" || storedTheme === "dark") {
-            return storedTheme;
-        }
-    } catch (error) {
-        return "dark";
+    for (let index = copied.length - 1; index > 0; index -= 1) {
+        const swapIndex = Math.floor(Math.random() * (index + 1));
+        [copied[index], copied[swapIndex]] = [copied[swapIndex], copied[index]];
     }
 
-    return window.matchMedia("(prefers-color-scheme: light)").matches ? "light" : "dark";
+    return copied;
 }
 
-function getThemeValue(name) {
-    return getComputedStyle(document.body).getPropertyValue(name).trim();
-}
-
-function setTheme(theme) {
-    currentTheme = theme;
-    document.body.dataset.theme = theme;
-    themeToggleButton.textContent = theme === "dark" ? "Light Mode" : "Dark Mode";
-    themeToggleButton.setAttribute("aria-pressed", String(theme === "light"));
-
+function loadBestScore() {
     try {
-        localStorage.setItem(THEME_STORAGE_KEY, theme);
+        const storedValue = Number.parseInt(localStorage.getItem(BEST_SCORE_KEY) || "0", 10);
+        return Number.isFinite(storedValue) ? storedValue : 0;
+    } catch (error) {
+        return 0;
+    }
+}
+
+function saveBestScore() {
+    try {
+        localStorage.setItem(BEST_SCORE_KEY, String(bestScore));
     } catch (error) {
     }
-
-    draw();
 }
 
-function toggleTheme() {
-    setTheme(currentTheme === "dark" ? "light" : "dark");
+function createDeck() {
+    return shuffle(
+        CHARACTERS.flatMap((character) => [
+            { ...character, cardId: `${character.id}-a` },
+            { ...character, cardId: `${character.id}-b` }
+        ])
+    );
 }
 
-function resetGame() {
-    board = createBoard();
-    score = 0;
-    linesCleared = 0;
-    level = 1;
-    isPaused = false;
-    isGameOver = false;
-    dropAccumulator = 0;
-    lastTime = 0;
-    nextPiece = randomPiece();
-    spawnPiece();
-    updateStats();
-    hideMessage();
-    pauseButton.textContent = "Pause";
-    cancelAnimationFrame(animationFrameId);
-    draw();
-    animationFrameId = requestAnimationFrame(gameLoop);
-}
+function renderPartyList() {
+    partyListNode.innerHTML = "";
 
-function spawnPiece() {
-    activePiece = nextPiece;
-    activePiece.x = Math.floor((COLS - activePiece.matrix[0].length) / 2);
-    activePiece.y = -getVisibleTopOffset(activePiece.matrix);
-    nextPiece = randomPiece();
-
-    if (collides(activePiece)) {
-        endGame();
-    }
-}
-
-function getVisibleTopOffset(matrix) {
-    for (let y = 0; y < matrix.length; y += 1) {
-        if (matrix[y].some(Boolean)) {
-            return y;
+    CHARACTERS.forEach((character) => {
+        const chip = document.createElement("span");
+        chip.className = "party-chip";
+        if (matchedIds.has(character.id)) {
+            chip.classList.add("found");
         }
-    }
-    return 0;
-}
-
-function collides(piece, offsetX = 0, offsetY = 0, testMatrix = piece.matrix) {
-    for (let y = 0; y < testMatrix.length; y += 1) {
-        for (let x = 0; x < testMatrix[y].length; x += 1) {
-            if (!testMatrix[y][x]) {
-                continue;
-            }
-
-            const boardX = piece.x + x + offsetX;
-            const boardY = piece.y + y + offsetY;
-
-            if (boardX < 0 || boardX >= COLS || boardY >= ROWS) {
-                return true;
-            }
-
-            if (boardY >= 0 && board[boardY][boardX]) {
-                return true;
-            }
-        }
-    }
-
-    return false;
-}
-
-function mergePiece() {
-    activePiece.matrix.forEach((row, y) => {
-        row.forEach((value, x) => {
-            if (!value) {
-                return;
-            }
-
-            const boardY = activePiece.y + y;
-            const boardX = activePiece.x + x;
-
-            if (boardY >= 0) {
-                board[boardY][boardX] = activePiece.color;
-            }
-        });
+        chip.textContent = character.name;
+        partyListNode.appendChild(chip);
     });
 }
 
-function clearLines() {
-    let cleared = 0;
-
-    for (let y = ROWS - 1; y >= 0; y -= 1) {
-        if (board[y].every(Boolean)) {
-            board.splice(y, 1);
-            board.unshift(Array(COLS).fill(null));
-            cleared += 1;
-            y += 1;
-        }
-    }
-
-    if (!cleared) {
-        return;
-    }
-
-    linesCleared += cleared;
-    score += LINE_SCORES[cleared] * level;
-    level = Math.floor(linesCleared / LINES_PER_LEVEL) + 1;
-    updateStats();
+function setSpotlight(character) {
+    spotlightBadgeNode.textContent = character.badge;
+    spotlightBadgeNode.style.background = `linear-gradient(135deg, ${character.gradient[0]}, ${character.gradient[1]})`;
+    spotlightNameNode.textContent = character.name;
+    spotlightTypeNode.textContent = character.type;
 }
 
 function updateStats() {
-    scoreNode.textContent = score.toString();
-    linesNode.textContent = linesCleared.toString();
-    levelNode.textContent = level.toString();
+    if (score > bestScore) {
+        bestScore = score;
+        saveBestScore();
+    }
+
+    scoreNode.textContent = String(score);
+    bestScoreNode.textContent = String(bestScore);
+    timeLeftNode.textContent = String(timeLeft);
+    comboNode.textContent = String(combo);
+    matchesNode.textContent = `${matches} / ${CHARACTERS.length}`;
+    cardsLeftNode.textContent = String(deck.length - matchedIds.size * 2);
 }
 
-function rotate(matrix) {
-    return matrix[0].map((_, index) => matrix.map((row) => row[index]).reverse());
+function updateStatus(title, description) {
+    statusTextNode.textContent = title;
+    statusSubtextNode.textContent = description;
 }
 
-function tryRotate() {
-    if (isPaused || isGameOver) {
-        return;
-    }
-
-    const rotated = rotate(activePiece.matrix);
-    const kicks = [0, -1, 1, -2, 2];
-
-    for (const kick of kicks) {
-        if (!collides(activePiece, kick, 0, rotated)) {
-            activePiece.matrix = rotated;
-            activePiece.x += kick;
-            draw();
-            return;
-        }
-    }
+function buildCardElement(card) {
+    const button = document.createElement("button");
+    button.type = "button";
+    button.className = "card";
+    button.dataset.cardId = card.cardId;
+    button.dataset.characterId = card.id;
+    button.setAttribute("aria-label", `${card.name} 카드`);
+    button.innerHTML = `
+        <span class="card-face card-back"><span>${card.badge}</span></span>
+        <span class="card-face card-front" style="background: linear-gradient(160deg, ${card.gradient[0]}, ${card.gradient[1]});">
+            <span class="card-badge">${card.badge}</span>
+            <strong>${card.name}</strong>
+            <small>${card.type}</small>
+        </span>
+    `;
+    button.addEventListener("click", () => handleCardClick(button, card));
+    return button;
 }
 
-function movePiece(direction) {
-    if (isPaused || isGameOver) {
-        return;
-    }
-
-    if (!collides(activePiece, direction, 0)) {
-        activePiece.x += direction;
-        draw();
-    }
+function renderBoard() {
+    boardNode.innerHTML = "";
+    deck.forEach((card) => {
+        boardNode.appendChild(buildCardElement(card));
+    });
 }
 
-function softDrop() {
-    if (isPaused || isGameOver) {
-        return;
-    }
-
-    if (!collides(activePiece, 0, 1)) {
-        activePiece.y += 1;
-        score += 1;
-        updateStats();
-        draw();
-        return;
-    }
-
-    lockPiece();
+function finishGame(title, message) {
+    gameActive = false;
+    lockBoard = true;
+    window.clearInterval(timerId);
+    overlayNode.classList.remove("hidden");
+    resultTitleNode.textContent = title;
+    resultMessageNode.textContent = message;
 }
 
-function hardDrop() {
-    if (isPaused || isGameOver) {
-        return;
-    }
-
-    let distance = 0;
-    while (!collides(activePiece, 0, distance + 1)) {
-        distance += 1;
-    }
-
-    activePiece.y += distance;
-    score += distance * 2;
+function handleMatch(firstCardButton, secondCardButton, character) {
+    firstCardButton.classList.add("matched");
+    secondCardButton.classList.add("matched");
+    matchedIds.add(character.id);
+    matches += 1;
+    combo += 1;
+    score += 120 + combo * 35;
+    setSpotlight(character);
+    renderPartyList();
     updateStats();
-    lockPiece();
-}
 
-function lockPiece() {
-    mergePiece();
-    clearLines();
-    spawnPiece();
-    draw();
-}
-
-function getDropDelay() {
-    return DROP_SPEEDS[Math.min(level - 1, DROP_SPEEDS.length - 1)];
-}
-
-function gameLoop(timestamp = 0) {
-    const delta = timestamp - lastTime;
-    lastTime = timestamp;
-
-    if (!isPaused && !isGameOver) {
-        dropAccumulator += delta;
-        if (dropAccumulator >= getDropDelay()) {
-            dropAccumulator = 0;
-            if (!collides(activePiece, 0, 1)) {
-                activePiece.y += 1;
-            } else {
-                lockPiece();
-            }
-            draw();
-        }
-    }
-
-    animationFrameId = requestAnimationFrame(gameLoop);
-}
-
-function endGame() {
-    isGameOver = true;
-    showMessage("Game Over");
-}
-
-function togglePause() {
-    if (isGameOver) {
-        return;
-    }
-
-    isPaused = !isPaused;
-    pauseButton.textContent = isPaused ? "Resume" : "Pause";
-    if (isPaused) {
-        showMessage("Paused");
+    if (matchedIds.size === CHARACTERS.length) {
+        updateStatus("컬렉션 완성", `${CHARACTERS.length}종 캐릭터를 모두 찾았습니다.`);
+        finishGame("컬렉션 완성", `최종 점수 ${score}점. 잠만보까지 전부 모았습니다.`);
     } else {
-        hideMessage();
+        updateStatus("매치 성공", `${character.name} 발견. 콤보 ${combo}단계 유지 중입니다.`);
     }
 }
 
-function showMessage(text) {
-    messageNode.textContent = text;
-    messageNode.classList.remove("hidden");
+function handleMismatch(firstCardButton, secondCardButton) {
+    combo = 0;
+    score = Math.max(0, score - 20);
+    updateStatus("다시 집중", "다른 카드였습니다. 패턴을 기억하고 다시 뒤집으세요.");
+    updateStats();
+
+    window.setTimeout(() => {
+        firstCardButton.classList.remove("flipped");
+        secondCardButton.classList.remove("flipped");
+        flippedCards = [];
+        lockBoard = false;
+    }, MATCH_DELAY_MS);
 }
 
-function hideMessage() {
-    messageNode.classList.add("hidden");
-}
-
-function drawCell(ctx, x, y, color, size) {
-    ctx.fillStyle = color;
-    ctx.fillRect(x * size, y * size, size, size);
-    ctx.strokeStyle = getThemeValue("--cell-stroke");
-    ctx.lineWidth = 2;
-    ctx.strokeRect(x * size + 1, y * size + 1, size - 2, size - 2);
-}
-
-function drawBoard() {
-    boardCtx.clearRect(0, 0, boardCanvas.width, boardCanvas.height);
-
-    board.forEach((row, y) => {
-        row.forEach((color, x) => {
-            if (color) {
-                drawCell(boardCtx, x, y, color, BLOCK_SIZE);
-            }
-        });
-    });
-}
-
-function drawPiece(ctx, piece, size, offsetX = 0, offsetY = 0) {
-    piece.matrix.forEach((row, y) => {
-        row.forEach((value, x) => {
-            if (!value) {
-                return;
-            }
-            const drawY = piece.y + y + offsetY;
-            if (drawY < 0) {
-                return;
-            }
-            drawCell(ctx, piece.x + x + offsetX, drawY, piece.color, size);
-        });
-    });
-}
-
-function drawGhost() {
-    let ghostY = activePiece.y;
-    while (!collides({ ...activePiece, y: ghostY }, 0, 1)) {
-        ghostY += 1;
-    }
-
-    const ghost = { ...activePiece, y: ghostY };
-    boardCtx.globalAlpha = 0.25;
-    drawPiece(boardCtx, ghost, BLOCK_SIZE);
-    boardCtx.globalAlpha = 1;
-}
-
-function drawNextPiece() {
-    nextCtx.clearRect(0, 0, nextCanvas.width, nextCanvas.height);
-    const size = 24;
-    const matrixWidth = nextPiece.matrix[0].length;
-    const matrixHeight = nextPiece.matrix.length;
-    const offsetX = Math.floor((nextCanvas.width / size - matrixWidth) / 2);
-    const offsetY = Math.floor((nextCanvas.height / size - matrixHeight) / 2);
-    drawPiece(nextCtx, { ...nextPiece, x: 0, y: 0 }, size, offsetX, offsetY);
-}
-
-function draw() {
-    drawBoard();
-    if (!activePiece) {
-        return;
-    }
-    if (!isGameOver) {
-        drawGhost();
-    }
-    drawPiece(boardCtx, activePiece, BLOCK_SIZE);
-    drawNextPiece();
-}
-
-document.addEventListener("keydown", (event) => {
-    if (["ArrowLeft", "ArrowRight", "ArrowDown", "ArrowUp", "Space"].includes(event.code)) {
-        event.preventDefault();
-    }
-
-    if (event.repeat && event.code !== "ArrowDown") {
+function handleCardClick(button, card) {
+    if (!gameActive || lockBoard || button.classList.contains("flipped") || button.classList.contains("matched")) {
         return;
     }
 
-    switch (event.code) {
-        case "ArrowLeft":
-            movePiece(-1);
-            break;
-        case "ArrowRight":
-            movePiece(1);
-            break;
-        case "ArrowDown":
-            softDrop();
-            break;
-        case "ArrowUp":
-        case "KeyX":
-            tryRotate();
-            break;
-        case "Space":
-            hardDrop();
-            break;
-        case "KeyP":
-            togglePause();
-            break;
-        case "KeyT":
-            toggleTheme();
-            break;
-        default:
-            break;
-    }
-});
+    button.classList.add("flipped");
+    flippedCards.push({ button, card });
+    setSpotlight(card);
 
-restartButton.addEventListener("click", resetGame);
-pauseButton.addEventListener("click", togglePause);
-themeToggleButton.addEventListener("click", toggleTheme);
-
-mobileControls.addEventListener("click", (event) => {
-    const button = event.target.closest("button");
-    if (!button) {
+    if (flippedCards.length < 2) {
+        updateStatus("카드 확인 중", `${card.name} 카드가 열렸습니다.`);
         return;
     }
 
-    const { action } = button.dataset;
-    if (action === "left") {
-        movePiece(-1);
-    } else if (action === "right") {
-        movePiece(1);
-    } else if (action === "rotate") {
-        tryRotate();
-    } else if (action === "down") {
-        softDrop();
-    } else if (action === "drop") {
-        hardDrop();
-    }
-});
+    lockBoard = true;
+    const [firstPick, secondPick] = flippedCards;
 
-setTheme(getStoredTheme());
-resetGame();
+    if (firstPick.card.id === secondPick.card.id) {
+        window.setTimeout(() => {
+            handleMatch(firstPick.button, secondPick.button, card);
+            flippedCards = [];
+            lockBoard = false;
+        }, 220);
+        return;
+    }
+
+    handleMismatch(firstPick.button, secondPick.button);
+}
+
+function tick() {
+    timeLeft -= 1;
+    updateStats();
+
+    if (timeLeft <= 12 && timeLeft > 0) {
+        updateStatus("마지막 스퍼트", `남은 시간 ${timeLeft}초. 빠르게 매치를 이어가세요.`);
+    }
+
+    if (timeLeft > 0) {
+        return;
+    }
+
+    updateStatus("시간 종료", "제한 시간이 끝났습니다.");
+    finishGame("시간 종료", `최종 점수 ${score}점. 다시 도전해서 컬렉션을 완성하세요.`);
+}
+
+function startTimer() {
+    window.clearInterval(timerId);
+    timerId = window.setInterval(tick, 1000);
+}
+
+function startGame({ reshuffleOnly = false } = {}) {
+    deck = createDeck();
+    flippedCards = [];
+    matchedIds = new Set();
+    score = reshuffleOnly ? Math.max(0, score - 40) : 0;
+    combo = 0;
+    matches = 0;
+    timeLeft = GAME_TIME;
+    lockBoard = false;
+    gameActive = true;
+    overlayNode.classList.add("hidden");
+    updateStatus("준비 완료", "카드를 뒤집어 피카츄 컬렉션을 완성하세요.");
+    setSpotlight(CHARACTERS[0]);
+    renderBoard();
+    renderPartyList();
+    updateStats();
+    startTimer();
+}
+
+restartButton.addEventListener("click", () => startGame());
+shuffleButton.addEventListener("click", () => startGame({ reshuffleOnly: true }));
+playAgainButton.addEventListener("click", () => startGame());
+
+bestScore = loadBestScore();
+startGame();

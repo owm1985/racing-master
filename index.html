@@ -1,63 +1,103 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Neon Stack Tetris</title>
+    <title>피카츄 매치 대작전</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <main class="layout">
-        <section class="hero">
-            <p class="eyebrow">Arcade Drop</p>
-            <h1>Neon Stack</h1>
-            <p class="tagline">Clear lines, speed up, and switch between dark and light play modes.</p>
-            <div class="controls-card">
-                <p><strong>Keyboard</strong></p>
-                <p>Left/Right: Move</p>
-                <p>Up or X: Rotate</p>
-                <p>Down: Soft Drop</p>
-                <p>Space: Hard Drop</p>
-                <p>P: Pause</p>
+    <main class="app-shell">
+        <section class="hero-panel">
+            <div class="hero-copy">
+                <p class="eyebrow">Pocket Match / Reflex Mode</p>
+                <h1>피카츄 매치 대작전</h1>
+                <p class="tagline">피카츄, 라이츄, 파이리, 꼬부기, 버터플, 야도란, 피존투, 또가스, 잠만보까지. 카드 두 장을 뒤집어 같은 캐릭터를 빠르게 찾고 콤보를 이어가세요.</p>
+                <div class="hero-actions">
+                    <button id="restart-button" class="action" type="button">새 게임</button>
+                    <button id="shuffle-button" class="action secondary" type="button">다시 섞기</button>
+                </div>
+            </div>
+
+            <div class="hero-aside">
+                <div class="glass-card status-card">
+                    <p class="panel-label">현재 상태</p>
+                    <strong id="status-text">준비 완료</strong>
+                    <p id="status-subtext" class="subtext">카드를 뒤집어 매치를 시작하세요.</p>
+                </div>
+                <div class="glass-card rules-card">
+                    <p class="panel-label">플레이 방식</p>
+                    <ul>
+                        <li>같은 캐릭터 카드 2장을 맞추면 점수 획득</li>
+                        <li>연속 성공 시 콤보 보너스 증가</li>
+                        <li>제한 시간 안에 모든 캐릭터를 찾으면 승리</li>
+                    </ul>
+                </div>
             </div>
         </section>
 
-        <section class="game-shell">
-            <div class="board-wrap">
-                <canvas id="board" width="300" height="600" aria-label="Tetris board"></canvas>
-                <div id="message" class="message hidden"></div>
-            </div>
+        <section class="game-layout">
+            <section class="board-panel">
+                <div class="board-header">
+                    <div>
+                        <p class="panel-label">매치 보드</p>
+                        <h2>포켓 카드 필드</h2>
+                    </div>
+                    <p class="subtext">총 20장. 같은 캐릭터를 모두 찾아 컬렉션을 완성하세요.</p>
+                </div>
+                <div id="game-board" class="game-board" aria-live="polite"></div>
+            </section>
 
             <aside class="sidebar">
-                <button id="theme-toggle" class="action theme-toggle" type="button" aria-pressed="false">Light Mode</button>
-                <div class="panel">
-                    <span class="label">Score</span>
-                    <strong id="score">0</strong>
+                <div class="panel spotlight-panel">
+                    <p class="panel-label">스포트라이트</p>
+                    <div id="spotlight-badge" class="spotlight-badge">⚡</div>
+                    <strong id="spotlight-name">피카츄</strong>
+                    <p id="spotlight-type" class="subtext">전기 타입 / 번개 에이스</p>
                 </div>
-                <div class="panel">
-                    <span class="label">Lines</span>
-                    <strong id="lines">0</strong>
+
+                <div class="panel stats-grid">
+                    <div>
+                        <span class="stat-label">점수</span>
+                        <strong id="score">0</strong>
+                    </div>
+                    <div>
+                        <span class="stat-label">최고 점수</span>
+                        <strong id="best-score">0</strong>
+                    </div>
+                    <div>
+                        <span class="stat-label">남은 시간</span>
+                        <strong id="time-left">75</strong>
+                    </div>
+                    <div>
+                        <span class="stat-label">현재 콤보</span>
+                        <strong id="combo">0</strong>
+                    </div>
+                    <div>
+                        <span class="stat-label">매치 수</span>
+                        <strong id="matches">0 / 10</strong>
+                    </div>
+                    <div>
+                        <span class="stat-label">남은 카드</span>
+                        <strong id="cards-left">20</strong>
+                    </div>
                 </div>
-                <div class="panel">
-                    <span class="label">Level</span>
-                    <strong id="level">1</strong>
+
+                <div class="panel party-panel">
+                    <p class="panel-label">등장 캐릭터</p>
+                    <div id="party-list" class="party-list"></div>
                 </div>
-                <div class="panel">
-                    <span class="label">Next</span>
-                    <canvas id="next-piece" width="120" height="120" aria-label="Next piece"></canvas>
-                </div>
-                <button id="restart" class="action" type="button">Restart Game</button>
-                <button id="pause" class="action secondary" type="button">Pause</button>
             </aside>
         </section>
     </main>
 
-    <div class="mobile-controls" aria-label="Touch controls">
-        <button data-action="left" type="button">Left</button>
-        <button data-action="rotate" type="button">Rotate</button>
-        <button data-action="right" type="button">Right</button>
-        <button data-action="down" type="button">Down</button>
-        <button data-action="drop" class="wide" type="button">Drop</button>
+    <div id="result-overlay" class="result-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="result-title">
+        <div class="result-card">
+            <p class="panel-label">게임 결과</p>
+            <h2 id="result-title">컬렉션 완성</h2>
+            <p id="result-message" class="subtext">모든 카드를 찾았습니다.</p>
+            <button id="play-again-button" class="action" type="button">한 판 더</button>
+        </div>
     </div>
 
     <script src="main.js"></script>
