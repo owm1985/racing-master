@@ -3,60 +3,60 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>피카츄 매치 대작전</title>
+    <title>피카츄 러시 어드벤처</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <main class="app-shell">
         <section class="hero-panel">
             <div class="hero-copy">
-                <p class="eyebrow">Pocket Match / Reflex Mode</p>
-                <h1>피카츄 매치 대작전</h1>
-                <p class="tagline">피카츄, 라이츄, 파이리, 꼬부기, 버터플, 야도란, 피존투, 또가스, 잠만보까지. 카드 두 장을 뒤집어 같은 캐릭터를 빠르게 찾고 콤보를 이어가세요.</p>
+                <p class="eyebrow">Pocket Platform / Side Run</p>
+                <h1>피카츄 러시 어드벤처</h1>
+                <p class="tagline">이제 피카츄가 직접 달립니다. 점프해서 발판을 넘고, 또가스와 잠만보를 피하고, 파이리와 꼬부기, 버터플, 야도란, 피존투, 이상해씨를 만나 번개 코어를 모은 뒤 라이츄 게이트까지 도착하세요.</p>
                 <div class="hero-actions">
-                    <button id="restart-button" class="action" type="button">새 게임</button>
-                    <button id="shuffle-button" class="action secondary" type="button">다시 섞기</button>
+                    <button id="restart-button" class="action" type="button">새 모험 시작</button>
                 </div>
             </div>
-
-            <div class="hero-aside">
-                <div class="glass-card status-card">
-                    <p class="panel-label">현재 상태</p>
-                    <strong id="status-text">준비 완료</strong>
-                    <p id="status-subtext" class="subtext">카드를 뒤집어 매치를 시작하세요.</p>
+            <div class="hero-side">
+                <div class="info-card status-card">
+                    <p class="panel-label">상태</p>
+                    <strong id="status-text">출발 준비</strong>
+                    <p id="status-subtext" class="subtext">방향키로 이동, 스페이스로 점프.</p>
                 </div>
-                <div class="glass-card rules-card">
-                    <p class="panel-label">플레이 방식</p>
-                    <ul>
-                        <li>같은 캐릭터 카드 2장을 맞추면 점수 획득</li>
-                        <li>연속 성공 시 콤보 보너스 증가</li>
-                        <li>제한 시간 안에 모든 캐릭터를 찾으면 승리</li>
-                    </ul>
+                <div class="info-card controls-card">
+                    <p class="panel-label">조작</p>
+                    <div class="control-list">
+                        <p><span>이동</span><kbd>←</kbd><kbd>→</kbd></p>
+                        <p><span>점프</span><kbd>Space</kbd></p>
+                        <p><span>재시작</span><kbd>R</kbd></p>
+                    </div>
                 </div>
             </div>
         </section>
 
         <section class="game-layout">
-            <section class="board-panel">
-                <div class="board-header">
+            <section class="stage-panel">
+                <div class="stage-head">
                     <div>
-                        <p class="panel-label">매치 보드</p>
-                        <h2>포켓 카드 필드</h2>
+                        <p class="panel-label">스테이지</p>
+                        <h2>썬더 밸리</h2>
                     </div>
-                    <p class="subtext">총 20장. 같은 캐릭터를 모두 찾아 컬렉션을 완성하세요.</p>
+                    <p class="subtext">끝 지점의 라이츄 게이트까지 도착하면 클리어입니다.</p>
                 </div>
-                <div id="game-board" class="game-board" aria-live="polite"></div>
+                <div class="canvas-frame">
+                    <canvas id="game-canvas" width="960" height="540" aria-label="피카츄 액션 게임"></canvas>
+                </div>
             </section>
 
             <aside class="sidebar">
                 <div class="panel spotlight-panel">
-                    <p class="panel-label">스포트라이트</p>
-                    <div id="spotlight-badge" class="spotlight-badge">⚡</div>
-                    <strong id="spotlight-name">피카츄</strong>
-                    <p id="spotlight-type" class="subtext">전기 타입 / 번개 에이스</p>
+                    <p class="panel-label">플레이어</p>
+                    <div class="avatar-badge">⚡</div>
+                    <strong>피카츄</strong>
+                    <p class="subtext">전기 타입 / 점프 에이스</p>
                 </div>
 
-                <div class="panel stats-grid">
+                <div class="panel stats-panel">
                     <div>
                         <span class="stat-label">점수</span>
                         <strong id="score">0</strong>
@@ -66,37 +66,33 @@
                         <strong id="best-score">0</strong>
                     </div>
                     <div>
-                        <span class="stat-label">남은 시간</span>
-                        <strong id="time-left">75</strong>
+                        <span class="stat-label">남은 하트</span>
+                        <strong id="lives">3</strong>
                     </div>
                     <div>
-                        <span class="stat-label">현재 콤보</span>
-                        <strong id="combo">0</strong>
+                        <span class="stat-label">코어 수집</span>
+                        <strong id="cores">0 / 8</strong>
                     </div>
                     <div>
-                        <span class="stat-label">매치 수</span>
-                        <strong id="matches">0 / 10</strong>
-                    </div>
-                    <div>
-                        <span class="stat-label">남은 카드</span>
-                        <strong id="cards-left">20</strong>
+                        <span class="stat-label">진행도</span>
+                        <strong id="progress">0%</strong>
                     </div>
                 </div>
 
-                <div class="panel party-panel">
+                <div class="panel roster-panel">
                     <p class="panel-label">등장 캐릭터</p>
-                    <div id="party-list" class="party-list"></div>
+                    <div id="roster" class="roster"></div>
                 </div>
             </aside>
         </section>
     </main>
 
-    <div id="result-overlay" class="result-overlay hidden" role="dialog" aria-modal="true" aria-labelledby="result-title">
+    <div id="result-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="result-title">
         <div class="result-card">
-            <p class="panel-label">게임 결과</p>
-            <h2 id="result-title">컬렉션 완성</h2>
-            <p id="result-message" class="subtext">모든 카드를 찾았습니다.</p>
-            <button id="play-again-button" class="action" type="button">한 판 더</button>
+            <p class="panel-label">결과</p>
+            <h2 id="result-title">클리어</h2>
+            <p id="result-message" class="subtext">라이츄 게이트 도착.</p>
+            <button id="play-again-button" class="action" type="button">다시 하기</button>
         </div>
     </div>
 
