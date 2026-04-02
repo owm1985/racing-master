@@ -190,12 +190,32 @@ function sortLeaderboard(entries) {
     }).slice(0, 5);
 }
 
+function getLiveLeaderboardEntries() {
+    const entries = loadLeaderboard();
+    if (gameEnded || roundSaved) {
+        return entries;
+    }
+
+    const previewEntry = {
+        name: "현재 플레이",
+        score,
+        lines,
+        level,
+        remainingTimeMs,
+        outcome: "live",
+        createdAt: new Date().toISOString(),
+        isPreview: true
+    };
+
+    return sortLeaderboard([...entries, previewEntry]);
+}
+
 function renderLeaderboard() {
     if (!leaderboardNode) {
         return;
     }
 
-    const entries = loadLeaderboard();
+    const entries = getLiveLeaderboardEntries();
     leaderboardNode.innerHTML = "";
 
     if (!entries.length) {
@@ -209,6 +229,9 @@ function renderLeaderboard() {
     entries.forEach((entry, index) => {
         const item = document.createElement("li");
         item.className = "leaderboard-item";
+        if (entry.isPreview) {
+            item.classList.add("leaderboard-item-preview");
+        }
 
         const rank = document.createElement("span");
         rank.className = "leaderboard-rank";
@@ -227,19 +250,7 @@ function renderLeaderboard() {
 }
 
 function qualifiesForLeaderboard() {
-    const entries = loadLeaderboard();
-    if (entries.length < 5) {
-        return true;
-    }
-    const sorted = sortLeaderboard(entries);
-    const lastEntry = sorted[sorted.length - 1];
-    if (score !== lastEntry.score) {
-        return score > lastEntry.score;
-    }
-    if (lines !== lastEntry.lines) {
-        return lines > lastEntry.lines;
-    }
-    return remainingTimeMs > lastEntry.remainingTimeMs;
+    return getLiveLeaderboardEntries().some((entry) => entry.isPreview);
 }
 
 function setLeaderboardFormVisible(visible) {
