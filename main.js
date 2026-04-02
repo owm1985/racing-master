@@ -13,7 +13,7 @@ const SOFT_DROP_POINTS = 1;
 const HARD_DROP_POINTS = 2;
 const LINE_CLEAR_POINTS = [0, 100, 300, 500, 800];
 const TARGET_LINES = 18;
-const TIME_LIMIT_MS = 3 * 60 * 1000;
+const TIME_LIMIT_MS = 1 * 60 * 1000;
 
 const PIECES = {
     I: {
@@ -455,8 +455,8 @@ function finishRound(success, message) {
     overlayNode.classList.remove("hidden");
     resultTitleNode.textContent = success ? "타임어택 성공" : "타임어택 실패";
     resultMessageNode.textContent = `점수 ${score}점 · ${lines}/${TARGET_LINES}줄 · 남은 시간 ${formatTime(remainingTimeMs)}.`;
-    leaderboardSummaryNode.textContent = success ? message : message || "3분 안에 목표 줄 수를 채우지 못했습니다.";
-    setStatus(success ? "클리어" : "종료", success ? message : (message || "3분 타임어택 종료. 다시 도전해보세요."));
+    leaderboardSummaryNode.textContent = success ? message : message || "1분 안에 목표 줄 수를 채우지 못했습니다.";
+    setStatus(success ? "클리어" : "종료", success ? message : (message || "1분 타임어택 종료. 다시 도전해보세요."));
     setLeaderboardFormVisible(qualifiesForLeaderboard() && !roundSaved);
 }
 
@@ -477,7 +477,7 @@ function startGame() {
     overlayNode.classList.add("hidden");
     setLeaderboardFormVisible(false);
     spawnPiece();
-    setStatus("시작", `3분 안에 ${TARGET_LINES}줄을 지우면 클리어입니다.`);
+    setStatus("시작", `1분 안에 ${TARGET_LINES}줄을 지우면 클리어입니다.`);
     updateHud();
     animationFrameId = requestAnimationFrame(loop);
 }
@@ -598,7 +598,7 @@ function drawHudInsideCanvas() {
     ctx.fillText("TETRIS TIME ATTACK", 420, 76);
     ctx.font = "14px Trebuchet MS, sans-serif";
     ctx.fillStyle = "rgba(248, 250, 252, 0.72)";
-    ctx.fillText(`3분 안에 ${TARGET_LINES}줄 삭제`, 420, 104);
+    ctx.fillText(`1분 안에 ${TARGET_LINES}줄 삭제`, 420, 104);
 
     const info = [
         ["SCORE", String(score)],
