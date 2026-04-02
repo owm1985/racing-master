@@ -717,7 +717,20 @@ function loop(timestamp) {
     animationFrameId = requestAnimationFrame(loop);
 }
 
+function isTypingTarget(target) {
+    if (!target) {
+        return false;
+    }
+
+    const tagName = target.tagName;
+    return target.isContentEditable || tagName === "INPUT" || tagName === "TEXTAREA" || tagName === "SELECT";
+}
+
 function handleKeyDown(event) {
+    if (event.isComposing || event.keyCode === 229 || isTypingTarget(event.target)) {
+        return;
+    }
+
     if (gameEnded && event.code !== "KeyR") {
         return;
     }
