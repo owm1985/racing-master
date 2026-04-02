@@ -1,24 +1,83 @@
-const BEST_SCORE_KEY = "pikachu-rush-best-score";
-const GRAVITY = 0.58;
-const FRICTION = 0.82;
-const MOVE_SPEED = 0.85;
-const MAX_SPEED_X = 6;
-const JUMP_POWER = -13.5;
-const LEVEL_WIDTH = 3400;
-const GROUND_Y = 470;
+const BEST_SCORE_KEY = "tetris-volt-best-score";
+const COLS = 10;
+const ROWS = 20;
+const BLOCK = 24;
+const BOARD_X = 110;
+const BOARD_Y = 30;
+const DROP_INTERVAL_START = 900;
+const LEVEL_STEP = 10;
+const PREVIEW_COUNT = 3;
+const SOFT_DROP_POINTS = 1;
+const HARD_DROP_POINTS = 2;
+const LINE_CLEAR_POINTS = [0, 100, 300, 500, 800];
 
-const CHARACTERS = [
-    { id: "pikachu", name: "피카츄", role: "player", badge: "⚡", color: "#ffd84d" },
-    { id: "raichu", name: "라이츄", role: "goal", badge: "⚡", color: "#ef8a32" },
-    { id: "charmander", name: "파이리", role: "friend", badge: "🔥", color: "#f06a53" },
-    { id: "squirtle", name: "꼬부기", role: "friend", badge: "💧", color: "#4c8ef7" },
-    { id: "butterfree", name: "버터플", role: "friend", badge: "🦋", color: "#8e70f2" },
-    { id: "slowbro", name: "야도란", role: "friend", badge: "🌊", color: "#d070a6" },
-    { id: "pidgeot", name: "피존투", role: "friend", badge: "🪶", color: "#9c7448" },
-    { id: "koffing", name: "또가스", role: "enemy", badge: "☁️", color: "#8f68db" },
-    { id: "snorlax", name: "잠만보", role: "enemy", badge: "💤", color: "#457577" },
-    { id: "bulbasaur", name: "이상해씨", role: "friend", badge: "🌿", color: "#58a96d" }
-];
+const PIECES = {
+    I: {
+        color: "#57d6ff",
+        rotations: [
+            [[1, 1, 1, 1]],
+            [[1], [1], [1], [1]],
+            [[1, 1, 1, 1]],
+            [[1], [1], [1], [1]]
+        ]
+    },
+    O: {
+        color: "#ffd84d",
+        rotations: [
+            [[1, 1], [1, 1]],
+            [[1, 1], [1, 1]],
+            [[1, 1], [1, 1]],
+            [[1, 1], [1, 1]]
+        ]
+    },
+    T: {
+        color: "#b27cff",
+        rotations: [
+            [[0, 1, 0], [1, 1, 1]],
+            [[1, 0], [1, 1], [1, 0]],
+            [[1, 1, 1], [0, 1, 0]],
+            [[0, 1], [1, 1], [0, 1]]
+        ]
+    },
+    S: {
+        color: "#67d67b",
+        rotations: [
+            [[0, 1, 1], [1, 1, 0]],
+            [[1, 0], [1, 1], [0, 1]],
+            [[0, 1, 1], [1, 1, 0]],
+            [[1, 0], [1, 1], [0, 1]]
+        ]
+    },
+    Z: {
+        color: "#ff7a6b",
+        rotations: [
+            [[1, 1, 0], [0, 1, 1]],
+            [[0, 1], [1, 1], [1, 0]],
+            [[1, 1, 0], [0, 1, 1]],
+            [[0, 1], [1, 1], [1, 0]]
+        ]
+    },
+    J: {
+        color: "#5f8cff",
+        rotations: [
+            [[1, 0, 0], [1, 1, 1]],
+            [[1, 1], [1, 0], [1, 0]],
+            [[1, 1, 1], [0, 0, 1]],
+            [[0, 1], [0, 1], [1, 1]]
+        ]
+    },
+    L: {
+        color: "#ffb055",
+        rotations: [
+            [[0, 0, 1], [1, 1, 1]],
+            [[1, 0], [1, 0], [1, 1]],
+            [[1, 1, 1], [1, 0, 0]],
+            [[1, 1], [0, 1], [0, 1]]
+        ]
+    }
+};
+
+const PIECE_ORDER = Object.keys(PIECES);
 
 const canvas = document.getElementById("game-canvas");
 const ctx = canvas.getContext("2d");
@@ -39,60 +98,25 @@ const partnershipForm = document.getElementById("partnership-form");
 const partnershipSubmitButton = document.getElementById("partnership-submit");
 const formStatusNode = document.getElementById("form-status");
 
-const keys = { left: false, right: false };
-
-const platforms = [
-    { x: 0, y: 470, w: 420, h: 90 },
-    { x: 480, y: 420, w: 160, h: 24 },
-    { x: 720, y: 360, w: 140, h: 24 },
-    { x: 920, y: 470, w: 260, h: 90 },
-    { x: 1240, y: 395, w: 170, h: 24 },
-    { x: 1470, y: 335, w: 150, h: 24 },
-    { x: 1680, y: 470, w: 300, h: 90 },
-    { x: 2050, y: 410, w: 170, h: 24 },
-    { x: 2290, y: 350, w: 150, h: 24 },
-    { x: 2510, y: 470, w: 310, h: 90 },
-    { x: 2890, y: 380, w: 160, h: 24 },
-    { x: 3110, y: 470, w: 290, h: 90 }
-];
-
-const enemiesBase = [
-    { x: 570, y: 384, w: 48, h: 36, vx: 1.2, minX: 500, maxX: 600, characterId: "koffing" },
-    { x: 1000, y: 430, w: 84, h: 40, vx: 1.1, minX: 960, maxX: 1090, characterId: "snorlax" },
-    { x: 1540, y: 295, w: 48, h: 40, vx: 1.4, minX: 1480, maxX: 1568, characterId: "koffing" },
-    { x: 1760, y: 430, w: 84, h: 40, vx: 1.25, minX: 1710, maxX: 1880, characterId: "snorlax" },
-    { x: 2340, y: 310, w: 48, h: 40, vx: 1.5, minX: 2300, maxX: 2380, characterId: "koffing" },
-    { x: 2660, y: 430, w: 84, h: 40, vx: 1.15, minX: 2550, maxX: 2720, characterId: "snorlax" }
-];
-
-const coresBase = [
-    { x: 540, y: 372, characterId: "charmander" },
-    { x: 770, y: 312, characterId: "squirtle" },
-    { x: 1280, y: 347, characterId: "butterfree" },
-    { x: 1510, y: 287, characterId: "slowbro" },
-    { x: 1830, y: 418, characterId: "pidgeot" },
-    { x: 2120, y: 362, characterId: "bulbasaur" },
-    { x: 2340, y: 302, characterId: "charmander" },
-    { x: 2930, y: 332, characterId: "butterfree" }
-];
-
-const goal = { x: 3290, y: 320, w: 64, h: 150, characterId: "raichu" };
-
+let board = [];
+let currentPiece = null;
+let nextQueue = [];
 let animationFrameId = 0;
-let bestScore = 0;
+let lastTime = 0;
+let dropAccumulator = 0;
 let score = 0;
-let lives = 3;
-let collectedCores = 0;
+let bestScore = 0;
+let lines = 0;
+let level = 1;
 let gameEnded = false;
-let cameraX = 0;
-let foundRoster = new Set(["pikachu"]);
 
-let player;
-let enemies;
-let cores;
+function createBoard() {
+    return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
+}
 
-function getCharacter(id) {
-    return CHARACTERS.find((character) => character.id === id);
+function setStatus(title, subtext) {
+    statusTextNode.textContent = title;
+    statusSubtextNode.textContent = subtext;
 }
 
 function loadBestScore() {
@@ -111,27 +135,201 @@ function saveBestScore() {
     }
 }
 
-function cloneEntities() {
-    enemies = enemiesBase.map((enemy) => ({ ...enemy }));
-    cores = coresBase.map((core) => ({ ...core, collected: false }));
+function getDropInterval() {
+    return Math.max(120, DROP_INTERVAL_START - (level - 1) * 75);
 }
 
-function setStatus(title, subtext) {
-    statusTextNode.textContent = title;
-    statusSubtextNode.textContent = subtext;
+function makeBag() {
+    const bag = [...PIECE_ORDER];
+    for (let i = bag.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [bag[i], bag[j]] = [bag[j], bag[i]];
+    }
+    return bag;
 }
 
-function renderRoster() {
-    rosterNode.innerHTML = "";
-    CHARACTERS.forEach((character) => {
-        const chip = document.createElement("span");
-        chip.className = "roster-chip";
-        if (foundRoster.has(character.id)) {
-            chip.classList.add("found");
+function refillQueue() {
+    while (nextQueue.length < PREVIEW_COUNT + 4) {
+        nextQueue.push(...makeBag());
+    }
+}
+
+function getMatrix(piece = currentPiece) {
+    return PIECES[piece.type].rotations[piece.rotation];
+}
+
+function createPiece(type) {
+    const matrix = PIECES[type].rotations[0];
+    return {
+        type,
+        rotation: 0,
+        x: Math.floor((COLS - matrix[0].length) / 2),
+        y: -getSpawnOffset(matrix)
+    };
+}
+
+function getSpawnOffset(matrix) {
+    let emptyTop = 0;
+    for (const row of matrix) {
+        if (row.every((cell) => cell === 0)) {
+            emptyTop += 1;
+        } else {
+            break;
         }
-        chip.textContent = `${character.badge} ${character.name}`;
-        rosterNode.appendChild(chip);
+    }
+    return emptyTop;
+}
+
+function spawnPiece() {
+    refillQueue();
+    currentPiece = createPiece(nextQueue.shift());
+    if (collides(currentPiece)) {
+        endGame();
+    }
+}
+
+function collides(piece, offsetX = 0, offsetY = 0, rotation = piece.rotation) {
+    const matrix = PIECES[piece.type].rotations[rotation];
+    for (let y = 0; y < matrix.length; y += 1) {
+        for (let x = 0; x < matrix[y].length; x += 1) {
+            if (!matrix[y][x]) {
+                continue;
+            }
+            const boardX = piece.x + x + offsetX;
+            const boardY = piece.y + y + offsetY;
+            if (boardX < 0 || boardX >= COLS || boardY >= ROWS) {
+                return true;
+            }
+            if (boardY >= 0 && board[boardY][boardX]) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function mergePiece() {
+    const matrix = getMatrix();
+    matrix.forEach((row, y) => {
+        row.forEach((cell, x) => {
+            if (!cell) {
+                return;
+            }
+            const boardY = currentPiece.y + y;
+            const boardX = currentPiece.x + x;
+            if (boardY >= 0) {
+                board[boardY][boardX] = currentPiece.type;
+            }
+        });
     });
+}
+
+function clearLines() {
+    let cleared = 0;
+    for (let y = ROWS - 1; y >= 0; y -= 1) {
+        if (board[y].every(Boolean)) {
+            board.splice(y, 1);
+            board.unshift(Array(COLS).fill(null));
+            cleared += 1;
+            y += 1;
+        }
+    }
+
+    if (!cleared) {
+        setStatus("낙하 중", "빈틈이 없도록 바닥을 평평하게 유지하세요.");
+        return;
+    }
+
+    lines += cleared;
+    level = Math.floor(lines / LEVEL_STEP) + 1;
+    score += LINE_CLEAR_POINTS[cleared] * level;
+    const label = cleared === 4 ? "테트리스" : `${cleared}줄 제거`;
+    setStatus(label, `라인 ${lines}개. 레벨 ${level}로 속도가 상승했습니다.`);
+}
+
+function lockPiece() {
+    mergePiece();
+    clearLines();
+    spawnPiece();
+    updateHud();
+}
+
+function movePiece(deltaX) {
+    if (gameEnded || !currentPiece) {
+        return;
+    }
+    if (!collides(currentPiece, deltaX, 0)) {
+        currentPiece.x += deltaX;
+        updateHud();
+    }
+}
+
+function rotatePiece(direction) {
+    if (gameEnded || !currentPiece) {
+        return;
+    }
+    const nextRotation = (currentPiece.rotation + direction + 4) % 4;
+    const kicks = [0, -1, 1, -2, 2];
+    for (const kick of kicks) {
+        if (!collides(currentPiece, kick, 0, nextRotation)) {
+            currentPiece.x += kick;
+            currentPiece.rotation = nextRotation;
+            setStatus("회전 성공", "벽에 닿으면 살짝 밀어내며 회전합니다.");
+            return;
+        }
+    }
+}
+
+function softDrop() {
+    if (gameEnded || !currentPiece) {
+        return;
+    }
+    if (!collides(currentPiece, 0, 1)) {
+        currentPiece.y += 1;
+        score += SOFT_DROP_POINTS;
+    } else {
+        lockPiece();
+    }
+}
+
+function hardDrop() {
+    if (gameEnded || !currentPiece) {
+        return;
+    }
+    let distance = 0;
+    while (!collides(currentPiece, 0, 1)) {
+        currentPiece.y += 1;
+        distance += 1;
+    }
+    score += distance * HARD_DROP_POINTS;
+    setStatus("하드 드롭", `${distance}칸을 즉시 낙하시켰습니다.`);
+    lockPiece();
+}
+
+function endGame() {
+    gameEnded = true;
+    overlayNode.classList.remove("hidden");
+    resultTitleNode.textContent = "게임 오버";
+    resultMessageNode.textContent = `점수 ${score}점, 제거 라인 ${lines}개.`;
+    setStatus("종료", "필드가 가득 찼습니다. R 또는 다시 하기로 재시작하세요.");
+}
+
+function startGame() {
+    cancelAnimationFrame(animationFrameId);
+    board = createBoard();
+    nextQueue = [];
+    refillQueue();
+    score = 0;
+    lines = 0;
+    level = 1;
+    gameEnded = false;
+    dropAccumulator = 0;
+    lastTime = 0;
+    overlayNode.classList.add("hidden");
+    spawnPiece();
+    setStatus("시작", "방향키로 정리하고 스페이스로 하드 드롭하세요.");
+    updateHud();
+    animationFrameId = requestAnimationFrame(loop);
 }
 
 function updateHud() {
@@ -142,347 +340,213 @@ function updateHud() {
 
     scoreNode.textContent = String(score);
     bestScoreNode.textContent = String(bestScore);
-    livesNode.textContent = String(lives);
-    coresNode.textContent = `${collectedCores} / ${coresBase.length}`;
-    progressNode.textContent = `${Math.max(0, Math.min(100, Math.round((player.x / (goal.x - 80)) * 100)))}%`;
-    renderRoster();
+    livesNode.textContent = String(lines);
+    coresNode.textContent = String(level);
+    progressNode.textContent = `${(1000 / getDropInterval()).toFixed(1)}x`;
+    renderQueue();
 }
 
-function resetPlayer() {
-    player = {
-        x: 80,
-        y: 360,
-        w: 46,
-        h: 58,
-        vx: 0,
-        vy: 0,
-        onGround: false,
-        invincibleUntil: 0,
-        facing: 1
-    };
-    cameraX = 0;
-}
-
-function startGame() {
-    cancelAnimationFrame(animationFrameId);
-    score = 0;
-    lives = 3;
-    collectedCores = 0;
-    gameEnded = false;
-    foundRoster = new Set(["pikachu", "raichu"]);
-    cloneEntities();
-    resetPlayer();
-    overlayNode.classList.add("hidden");
-    setStatus("출발 준비", "방향키로 이동하고 스페이스로 점프하세요.");
-    updateHud();
-    lastTime = 0;
-    animationFrameId = requestAnimationFrame(loop);
-}
-
-function showResult(title, message) {
-    gameEnded = true;
-    overlayNode.classList.remove("hidden");
-    resultTitleNode.textContent = title;
-    resultMessageNode.textContent = message;
-}
-
-function hitPlayer(enemyCharacter) {
-    const now = performance.now();
-    if (now < player.invincibleUntil || gameEnded) {
-        return;
-    }
-
-    lives -= 1;
-    player.invincibleUntil = now + 1400;
-    player.vx = -4;
-    player.vy = -8;
-    setStatus("피격", `${enemyCharacter.name}에게 막혔습니다. 하트가 하나 줄었습니다.`);
-    updateHud();
-
-    if (lives <= 0) {
-        showResult("게임 오버", `점수 ${score}점. 또가스와 잠만보 구간을 넘기지 못했습니다.`);
-    }
-}
-
-function collectCore(core) {
-    if (core.collected) {
-        return;
-    }
-
-    core.collected = true;
-    collectedCores += 1;
-    score += 150;
-    foundRoster.add(core.characterId);
-    const character = getCharacter(core.characterId);
-    setStatus("코어 획득", `${character.name}의 에너지를 얻었습니다.`);
-    updateHud();
-}
-
-function finishLevel() {
-    if (gameEnded) {
-        return;
-    }
-
-    const bonus = collectedCores * 120 + lives * 180;
-    score += bonus;
-    foundRoster = new Set(CHARACTERS.map((character) => character.id));
-    updateHud();
-    setStatus("클리어", "라이츄 게이트 도착. 스테이지 돌파 성공.");
-    showResult("스테이지 클리어", `최종 점수 ${score}점. 수집 코어 ${collectedCores}개, 남은 하트 ${lives}개.`);
-}
-
-function rectsOverlap(a, b) {
-    return a.x < b.x + b.w && a.x + a.w > b.x && a.y < b.y + b.h && a.y + a.h > b.y;
-}
-
-function updatePlayer() {
-    if (keys.left) {
-        player.vx -= MOVE_SPEED;
-        player.facing = -1;
-    }
-    if (keys.right) {
-        player.vx += MOVE_SPEED;
-        player.facing = 1;
-    }
-
-    player.vx *= FRICTION;
-    player.vx = Math.max(-MAX_SPEED_X, Math.min(MAX_SPEED_X, player.vx));
-    player.vy += GRAVITY;
-
-    player.x += player.vx;
-    player.y += player.vy;
-    player.onGround = false;
-
-    platforms.forEach((platform) => {
-        const wasAbove = player.y + player.h - player.vy <= platform.y;
-        const withinX = player.x + player.w > platform.x && player.x < platform.x + platform.w;
-        if (withinX && wasAbove && player.y + player.h >= platform.y && player.y + player.h <= platform.y + 26 && player.vy >= 0) {
-            player.y = platform.y - player.h;
-            player.vy = 0;
-            player.onGround = true;
-        }
-    });
-
-    if (player.y + player.h >= GROUND_Y && player.x < 420) {
-        player.y = GROUND_Y - player.h;
-        player.vy = 0;
-        player.onGround = true;
-    }
-    if (player.y + player.h >= GROUND_Y && player.x > 920 && player.x < 1180) {
-        player.y = GROUND_Y - player.h;
-        player.vy = 0;
-        player.onGround = true;
-    }
-    if (player.y + player.h >= GROUND_Y && player.x > 1680 && player.x < 1980) {
-        player.y = GROUND_Y - player.h;
-        player.vy = 0;
-        player.onGround = true;
-    }
-    if (player.y + player.h >= GROUND_Y && player.x > 2510 && player.x < 2820) {
-        player.y = GROUND_Y - player.h;
-        player.vy = 0;
-        player.onGround = true;
-    }
-    if (player.y + player.h >= GROUND_Y && player.x > 3110) {
-        player.y = GROUND_Y - player.h;
-        player.vy = 0;
-        player.onGround = true;
-    }
-
-    if (player.y > canvas.height + 120) {
-        lives -= 1;
-        updateHud();
-        if (lives <= 0) {
-            showResult("게임 오버", `점수 ${score}점. 낙하로 모험이 종료됐습니다.`);
-        } else {
-            setStatus("낙하", "발판 아래로 떨어졌습니다. 다시 시도하세요.");
-            resetPlayer();
-        }
-    }
-
-    player.x = Math.max(0, Math.min(LEVEL_WIDTH - player.w, player.x));
-    cameraX = Math.max(0, Math.min(LEVEL_WIDTH - canvas.width, player.x - canvas.width * 0.35));
-}
-
-function updateEnemies() {
-    enemies.forEach((enemy) => {
-        enemy.x += enemy.vx;
-        if (enemy.x <= enemy.minX || enemy.x + enemy.w >= enemy.maxX) {
-            enemy.vx *= -1;
-        }
-
-        if (rectsOverlap(player, enemy)) {
-            hitPlayer(getCharacter(enemy.characterId));
-        }
+function renderQueue() {
+    rosterNode.innerHTML = "";
+    nextQueue.slice(0, PREVIEW_COUNT).forEach((type, index) => {
+        const chip = document.createElement("div");
+        chip.className = "roster-chip found queue-chip";
+        chip.innerHTML = `<strong>${index === 0 ? "NEXT" : `+${index}`}</strong><span>${type}</span>`;
+        chip.style.borderColor = PIECES[type].color;
+        chip.style.boxShadow = `inset 0 0 0 1px ${PIECES[type].color}40`;
+        rosterNode.appendChild(chip);
     });
 }
 
-function updateCores() {
-    cores.forEach((core) => {
-        if (!core.collected && rectsOverlap(player, { x: core.x, y: core.y, w: 28, h: 28 })) {
-            collectCore(core);
-        }
-    });
+function getGhostY() {
+    let ghostY = currentPiece.y;
+    while (!collides({ ...currentPiece, y: ghostY }, 0, 1)) {
+        ghostY += 1;
+    }
+    return ghostY;
 }
 
-function updateGoal() {
-    if (rectsOverlap(player, goal)) {
-        finishLevel();
-    }
+function drawCell(x, y, color, alpha = 1) {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.fillStyle = color;
+    ctx.fillRect(x, y, BLOCK - 2, BLOCK - 2);
+    ctx.fillStyle = "rgba(255,255,255,0.22)";
+    ctx.fillRect(x + 3, y + 3, BLOCK - 10, 6);
+    ctx.restore();
 }
 
 function drawBackground() {
-    const scroll = cameraX * 0.35;
-    ctx.fillStyle = "#86d8ff";
+    const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    gradient.addColorStop(0, "#111827");
+    gradient.addColorStop(1, "#1f2937");
+    ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    ctx.fillStyle = "rgba(255,255,255,0.75)";
-    for (let i = 0; i < 5; i += 1) {
-        const x = ((i * 210 - scroll) % (canvas.width + 180)) - 100;
-        ctx.beginPath();
-        ctx.arc(x + 60, 90 + (i % 2) * 20, 28, 0, Math.PI * 2);
-        ctx.arc(x + 92, 82 + (i % 2) * 20, 36, 0, Math.PI * 2);
-        ctx.arc(x + 130, 92 + (i % 2) * 20, 26, 0, Math.PI * 2);
-        ctx.fill();
+    ctx.fillStyle = "rgba(255,255,255,0.04)";
+    for (let x = 0; x < canvas.width; x += 36) {
+        ctx.fillRect(x, 0, 1, canvas.height);
     }
-
-    ctx.fillStyle = "#7dc76d";
-    ctx.fillRect(0, 440, canvas.width, 100);
-    ctx.fillStyle = "#5aa455";
-    ctx.fillRect(0, 468, canvas.width, 72);
+    for (let y = 0; y < canvas.height; y += 36) {
+        ctx.fillRect(0, y, canvas.width, 1);
+    }
 }
 
-function drawPlatforms() {
-    platforms.forEach((platform) => {
-        const screenX = platform.x - cameraX;
-        ctx.fillStyle = platform.h > 30 ? "#8e6b44" : "#a47d4c";
-        ctx.fillRect(screenX, platform.y, platform.w, platform.h);
-        ctx.fillStyle = "#6ec767";
-        ctx.fillRect(screenX, platform.y, platform.w, 12);
-    });
-}
+function drawBoardFrame() {
+    ctx.fillStyle = "rgba(7, 12, 22, 0.88)";
+    ctx.fillRect(BOARD_X - 14, BOARD_Y - 14, COLS * BLOCK + 28, ROWS * BLOCK + 28);
+    ctx.strokeStyle = "rgba(255, 255, 255, 0.08)";
+    ctx.lineWidth = 2;
+    ctx.strokeRect(BOARD_X - 14, BOARD_Y - 14, COLS * BLOCK + 28, ROWS * BLOCK + 28);
 
-function drawGoal() {
-    const raichu = getCharacter(goal.characterId);
-    const x = goal.x - cameraX;
-    ctx.fillStyle = "#f4c35c";
-    ctx.fillRect(x, goal.y, goal.w, goal.h);
-    ctx.fillStyle = raichu.color;
-    ctx.fillRect(x + 8, goal.y + 12, goal.w - 16, goal.h - 24);
-    ctx.fillStyle = "#ffffff";
-    ctx.font = "28px sans-serif";
-    ctx.fillText(raichu.badge, x + 18, goal.y + 44);
-    ctx.font = "bold 18px sans-serif";
-    ctx.fillText(raichu.name, x - 10, goal.y - 10);
-}
-
-function drawCores() {
-    cores.forEach((core) => {
-        if (core.collected) {
-            return;
+    for (let y = 0; y < ROWS; y += 1) {
+        for (let x = 0; x < COLS; x += 1) {
+            ctx.fillStyle = (x + y) % 2 === 0 ? "rgba(255,255,255,0.03)" : "rgba(255,255,255,0.015)";
+            ctx.fillRect(BOARD_X + x * BLOCK, BOARD_Y + y * BLOCK, BLOCK - 1, BLOCK - 1);
         }
-        const character = getCharacter(core.characterId);
-        const x = core.x - cameraX;
-        const bob = Math.sin((performance.now() + core.x) / 180) * 5;
-        ctx.fillStyle = character.color;
-        ctx.beginPath();
-        ctx.arc(x + 14, core.y + 14 + bob, 14, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.fillStyle = "#ffffff";
-        ctx.font = "18px sans-serif";
-        ctx.fillText(character.badge, x + 6, core.y + 20 + bob);
+    }
+}
+
+function drawPlacedBlocks() {
+    for (let y = 0; y < ROWS; y += 1) {
+        for (let x = 0; x < COLS; x += 1) {
+            const type = board[y][x];
+            if (type) {
+                drawCell(BOARD_X + x * BLOCK + 1, BOARD_Y + y * BLOCK + 1, PIECES[type].color);
+            }
+        }
+    }
+}
+
+function drawPiece(piece, alpha = 1) {
+    const matrix = getMatrix(piece);
+    matrix.forEach((row, y) => {
+        row.forEach((cell, x) => {
+            if (!cell) {
+                return;
+            }
+            const boardY = piece.y + y;
+            if (boardY < 0) {
+                return;
+            }
+            drawCell(BOARD_X + (piece.x + x) * BLOCK + 1, BOARD_Y + boardY * BLOCK + 1, PIECES[piece.type].color, alpha);
+        });
     });
 }
 
-function drawEnemies() {
-    enemies.forEach((enemy) => {
-        const character = getCharacter(enemy.characterId);
-        const x = enemy.x - cameraX;
-        ctx.fillStyle = character.color;
-        ctx.fillRect(x, enemy.y, enemy.w, enemy.h);
-        ctx.fillStyle = "rgba(255,255,255,0.18)";
-        ctx.fillRect(x + 6, enemy.y + 6, enemy.w - 12, enemy.h - 12);
-        ctx.fillStyle = "#ffffff";
-        ctx.font = enemy.w > 60 ? "26px sans-serif" : "22px sans-serif";
-        ctx.fillText(character.badge, x + enemy.w * 0.22, enemy.y + enemy.h * 0.7);
-        ctx.font = "bold 14px sans-serif";
-        ctx.fillText(character.name, x - 10, enemy.y - 8);
-    });
-}
-
-function drawPlayer() {
-    const blink = performance.now() < player.invincibleUntil && Math.floor(performance.now() / 100) % 2 === 0;
-    if (blink) {
+function drawGhost() {
+    if (!currentPiece) {
         return;
     }
-
-    const x = player.x - cameraX;
-    ctx.fillStyle = "#ffd84d";
-    ctx.fillRect(x, player.y, player.w, player.h);
-    ctx.fillStyle = "#1f2430";
-    ctx.fillRect(x + (player.facing === 1 ? 30 : 8), player.y + 18, 6, 6);
-    ctx.fillStyle = "#e96b51";
-    ctx.fillRect(x + 10, player.y + 42, 26, 10);
-    ctx.font = "24px sans-serif";
-    ctx.fillText("⚡", x + 10, player.y + 28);
-    ctx.font = "bold 14px sans-serif";
-    ctx.fillText("피카츄", x - 8, player.y - 10);
+    drawPiece({ ...currentPiece, y: getGhostY() }, 0.22);
 }
 
 function drawHudInsideCanvas() {
-    ctx.fillStyle = "rgba(255, 251, 239, 0.82)";
-    ctx.fillRect(18, 18, 260, 72);
-    ctx.fillStyle = "#202635";
-    ctx.font = "bold 18px sans-serif";
-    ctx.fillText(`점수 ${score}`, 30, 46);
-    ctx.fillText(`하트 ${"♥".repeat(Math.max(0, lives))}`, 30, 74);
-    ctx.fillText(`코어 ${collectedCores}/${coresBase.length}`, 150, 46);
-    ctx.fillText(`진행 ${Math.round((player.x / goal.x) * 100)}%`, 150, 74);
+    ctx.fillStyle = "#f8fafc";
+    ctx.font = "bold 26px Trebuchet MS, sans-serif";
+    ctx.fillText("TETRIS", 420, 76);
+    ctx.font = "14px Trebuchet MS, sans-serif";
+    ctx.fillStyle = "rgba(248, 250, 252, 0.72)";
+    ctx.fillText("Arrow keys move, Up/X rotate, Z reverse, Space drop", 420, 104);
+
+    const info = [
+        ["SCORE", String(score)],
+        ["LINES", String(lines)],
+        ["LEVEL", String(level)],
+        ["SPEED", `${(1000 / getDropInterval()).toFixed(1)}x`]
+    ];
+
+    info.forEach(([label, value], index) => {
+        const top = 146 + index * 72;
+        ctx.fillStyle = "rgba(255,255,255,0.07)";
+        ctx.fillRect(420, top, 210, 54);
+        ctx.fillStyle = "rgba(248,250,252,0.72)";
+        ctx.font = "bold 12px Trebuchet MS, sans-serif";
+        ctx.fillText(label, 438, top + 20);
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 24px Trebuchet MS, sans-serif";
+        ctx.fillText(value, 438, top + 44);
+    });
+
+    ctx.fillStyle = "rgba(255,255,255,0.07)";
+    ctx.fillRect(660, 146, 170, 170);
+    ctx.fillStyle = "rgba(248,250,252,0.72)";
+    ctx.font = "bold 12px Trebuchet MS, sans-serif";
+    ctx.fillText("NEXT", 678, 168);
+
+    nextQueue.slice(0, 1).forEach((type) => {
+        const matrix = PIECES[type].rotations[0];
+        matrix.forEach((row, y) => {
+            row.forEach((cell, x) => {
+                if (!cell) {
+                    return;
+                }
+                drawCell(686 + x * 24, 194 + y * 24, PIECES[type].color);
+            });
+        });
+    });
 }
 
-let lastTime = 0;
-function loop(timestamp) {
-    const delta = timestamp - lastTime;
-    lastTime = timestamp;
-
-    if (!gameEnded) {
-        updatePlayer(delta);
-        updateEnemies(delta);
-        updateCores();
-        updateGoal();
-    }
-
+function draw() {
     drawBackground();
-    drawPlatforms();
-    drawGoal();
-    drawCores();
-    drawEnemies();
-    drawPlayer();
+    drawBoardFrame();
+    drawPlacedBlocks();
+    if (currentPiece) {
+        drawGhost();
+        drawPiece(currentPiece);
+    }
     drawHudInsideCanvas();
-    updateHud();
+}
 
+function update(delta) {
+    if (gameEnded || !currentPiece) {
+        return;
+    }
+    dropAccumulator += delta;
+    const interval = getDropInterval();
+    while (dropAccumulator >= interval) {
+        dropAccumulator -= interval;
+        if (!collides(currentPiece, 0, 1)) {
+            currentPiece.y += 1;
+        } else {
+            lockPiece();
+            break;
+        }
+    }
+}
+
+function loop(timestamp) {
+    const delta = lastTime ? timestamp - lastTime : 0;
+    lastTime = timestamp;
+    update(delta);
+    draw();
+    updateHud();
     animationFrameId = requestAnimationFrame(loop);
 }
 
 function handleKeyDown(event) {
-    if (event.code === "ArrowLeft" || event.code === "KeyA") {
-        keys.left = true;
-    } else if (event.code === "ArrowRight" || event.code === "KeyD") {
-        keys.right = true;
-    } else if ((event.code === "Space" || event.code === "ArrowUp" || event.code === "KeyW") && player.onGround && !gameEnded) {
+    if (gameEnded && event.code !== "KeyR") {
+        return;
+    }
+
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyZ", "KeyX"].includes(event.code)) {
         event.preventDefault();
-        player.vy = JUMP_POWER;
-        player.onGround = false;
+    }
+
+    if (event.code === "ArrowLeft" || event.code === "KeyA") {
+        movePiece(-1);
+    } else if (event.code === "ArrowRight" || event.code === "KeyD") {
+        movePiece(1);
+    } else if (event.code === "ArrowDown" || event.code === "KeyS") {
+        softDrop();
+    } else if (event.code === "ArrowUp" || event.code === "KeyX" || event.code === "KeyW") {
+        rotatePiece(1);
+    } else if (event.code === "KeyZ") {
+        rotatePiece(-1);
+    } else if (event.code === "Space") {
+        hardDrop();
     } else if (event.code === "KeyR") {
         startGame();
-    }
-}
-
-function handleKeyUp(event) {
-    if (event.code === "ArrowLeft" || event.code === "KeyA") {
-        keys.left = false;
-    } else if (event.code === "ArrowRight" || event.code === "KeyD") {
-        keys.right = false;
     }
 }
 
@@ -523,7 +587,6 @@ async function handlePartnershipSubmit(event) {
 }
 
 document.addEventListener("keydown", handleKeyDown);
-document.addEventListener("keyup", handleKeyUp);
 restartButton.addEventListener("click", startGame);
 playAgainButton.addEventListener("click", startGame);
 if (partnershipForm) {

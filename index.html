@@ -3,32 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>피카츄 러시 어드벤처</title>
+    <title>테트리스 볼트</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <main class="app-shell">
         <section class="hero-panel">
             <div class="hero-copy">
-                <p class="eyebrow">Pocket Platform / Side Run</p>
-                <h1>피카츄 러시 어드벤처</h1>
-                <p class="tagline">이제 피카츄가 직접 달립니다. 점프해서 발판을 넘고, 또가스와 잠만보를 피하고, 파이리와 꼬부기, 버터플, 야도란, 피존투, 이상해씨를 만나 번개 코어를 모은 뒤 라이츄 게이트까지 도착하세요.</p>
+                <p class="eyebrow">Arcade Stack / Puzzle Drop</p>
+                <h1>테트리스 볼트</h1>
+                <p class="tagline">블록을 쌓아 완성된 줄을 지우고 필드를 버티세요. 속도가 점점 빨라지며, 정확한 회전과 하드 드롭 판단이 점수를 가릅니다.</p>
                 <div class="hero-actions">
-                    <button id="restart-button" class="action" type="button">새 모험 시작</button>
+                    <button id="restart-button" class="action" type="button">새 게임 시작</button>
                 </div>
             </div>
             <div class="hero-side">
                 <div class="info-card status-card">
                     <p class="panel-label">상태</p>
-                    <strong id="status-text">출발 준비</strong>
-                    <p id="status-subtext" class="subtext">방향키로 이동, 스페이스로 점프.</p>
+                    <strong id="status-text">대기 중</strong>
+                    <p id="status-subtext" class="subtext">방향키 이동, 위/X 회전, 스페이스 하드 드롭.</p>
                 </div>
                 <div class="info-card controls-card">
                     <p class="panel-label">조작</p>
                     <div class="control-list">
                         <p><span>이동</span><kbd>←</kbd><kbd>→</kbd></p>
-                        <p><span>점프</span><kbd>Space</kbd></p>
-                        <p><span>재시작</span><kbd>R</kbd></p>
+                        <p><span>회전 / 드롭</span><kbd>↑</kbd><kbd>Space</kbd></p>
+                        <p><span>소프트 드롭 / 재시작</span><kbd>↓</kbd><kbd>R</kbd></p>
                     </div>
                 </div>
             </div>
@@ -39,21 +39,21 @@
                 <div class="stage-head">
                     <div>
                         <p class="panel-label">스테이지</p>
-                        <h2>썬더 밸리</h2>
+                        <h2>블록 필드</h2>
                     </div>
-                    <p class="subtext">끝 지점의 라이츄 게이트까지 도착하면 클리어입니다.</p>
+                    <p class="subtext">가로 줄을 완성하면 제거됩니다. 필드 꼭대기까지 차면 종료입니다.</p>
                 </div>
                 <div class="canvas-frame">
-                    <canvas id="game-canvas" width="960" height="540" aria-label="피카츄 액션 게임"></canvas>
+                    <canvas id="game-canvas" width="960" height="540" aria-label="테트리스 게임"></canvas>
                 </div>
             </section>
 
             <aside class="sidebar">
                 <div class="panel spotlight-panel">
                     <p class="panel-label">플레이어</p>
-                    <div class="avatar-badge">⚡</div>
-                    <strong>피카츄</strong>
-                    <p class="subtext">전기 타입 / 점프 에이스</p>
+                    <div class="avatar-badge">[]</div>
+                    <strong>테트리스</strong>
+                    <p class="subtext">10 x 20 / 라인 클리어 퍼즐</p>
                 </div>
 
                 <div class="panel stats-panel">
@@ -66,21 +66,21 @@
                         <strong id="best-score">0</strong>
                     </div>
                     <div>
-                        <span class="stat-label">남은 하트</span>
-                        <strong id="lives">3</strong>
+                        <span class="stat-label">제거 라인</span>
+                        <strong id="lives">0</strong>
                     </div>
                     <div>
-                        <span class="stat-label">코어 수집</span>
-                        <strong id="cores">0 / 8</strong>
+                        <span class="stat-label">레벨</span>
+                        <strong id="cores">1</strong>
                     </div>
                     <div>
-                        <span class="stat-label">진행도</span>
-                        <strong id="progress">0%</strong>
+                        <span class="stat-label">속도</span>
+                        <strong id="progress">1x</strong>
                     </div>
                 </div>
 
                 <div class="panel roster-panel">
-                    <p class="panel-label">등장 캐릭터</p>
+                    <p class="panel-label">다음 블록</p>
                     <div id="roster" class="roster"></div>
                 </div>
             </aside>
@@ -115,17 +115,43 @@
                 </div>
             </form>
         </section>
+
+        <section class="comments-panel" aria-labelledby="comments-title">
+            <div class="comments-head">
+                <p class="panel-label">Community</p>
+                <h2 id="comments-title">댓글</h2>
+                <p class="subtext">테트리스 기록이나 개선 아이디어를 자유롭게 남겨주세요.</p>
+            </div>
+            <div class="comments-frame">
+                <div id="disqus_thread"></div>
+                <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+            </div>
+        </section>
     </main>
 
     <div id="result-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="result-title">
         <div class="result-card">
             <p class="panel-label">결과</p>
-            <h2 id="result-title">클리어</h2>
-            <p id="result-message" class="subtext">라이츄 게이트 도착.</p>
+            <h2 id="result-title">게임 오버</h2>
+            <p id="result-message" class="subtext">필드가 가득 차면 종료됩니다.</p>
             <button id="play-again-button" class="action" type="button">다시 하기</button>
         </div>
     </div>
 
     <script src="main.js"></script>
+    <script>
+        var disqus_config = function () {
+            this.page.url = window.location.href;
+            this.page.identifier = window.location.pathname || "home";
+        };
+
+        (function () {
+            var d = document;
+            var s = d.createElement("script");
+            s.src = "https://racing-master.disqus.com/embed.js";
+            s.setAttribute("data-timestamp", String(+new Date()));
+            (d.head || d.body).appendChild(s);
+        })();
+    </script>
 </body>
 </html>
