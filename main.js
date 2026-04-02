@@ -1,15 +1,19 @@
 const BEST_SCORE_KEY = "tetris-volt-best-score";
+const LEADERBOARD_KEY = "tetris-volt-top-five";
+const COMMENTS_KEY = "tetris-volt-comments";
 const COLS = 10;
 const ROWS = 20;
 const BLOCK = 24;
 const BOARD_X = 110;
 const BOARD_Y = 30;
-const DROP_INTERVAL_START = 900;
-const LEVEL_STEP = 10;
+const DROP_INTERVAL_START = 950;
+const LEVEL_STEP = 6;
 const PREVIEW_COUNT = 3;
 const SOFT_DROP_POINTS = 1;
 const HARD_DROP_POINTS = 2;
 const LINE_CLEAR_POINTS = [0, 100, 300, 500, 800];
+const TARGET_LINES = 18;
+const TIME_LIMIT_MS = 3 * 60 * 1000;
 
 const PIECES = {
     I: {
@@ -89,6 +93,7 @@ const livesNode = document.getElementById("lives");
 const coresNode = document.getElementById("cores");
 const progressNode = document.getElementById("progress");
 const rosterNode = document.getElementById("roster");
+const leaderboardNode = document.getElementById("leaderboard");
 const restartButton = document.getElementById("restart-button");
 const overlayNode = document.getElementById("result-overlay");
 const resultTitleNode = document.getElementById("result-title");
@@ -97,6 +102,14 @@ const playAgainButton = document.getElementById("play-again-button");
 const partnershipForm = document.getElementById("partnership-form");
 const partnershipSubmitButton = document.getElementById("partnership-submit");
 const formStatusNode = document.getElementById("form-status");
+const commentForm = document.getElementById("comment-form");
+const commentSubmitButton = document.getElementById("comment-submit");
+const commentStatusNode = document.getElementById("comment-status");
+const commentListNode = document.getElementById("comment-list");
+const leaderboardForm = document.getElementById("leaderboard-form");
+const leaderboardNameInput = document.getElementById("leaderboard-name");
+const leaderboardStatusNode = document.getElementById("leaderboard-status");
+const leaderboardSummaryNode = document.getElementById("leaderboard-summary");
 
 let board = [];
 let currentPiece = null;
@@ -109,6 +122,9 @@ let bestScore = 0;
 let lines = 0;
 let level = 1;
 let gameEnded = false;
+let remainingTimeMs = TIME_LIMIT_MS;
+let roundSaved = false;
+let resultOutcome = "fail";
 
 function createBoard() {
     return Array.from({ length: ROWS }, () => Array(COLS).fill(null));
@@ -117,6 +133,14 @@ function createBoard() {
 function setStatus(title, subtext) {
     statusTextNode.textContent = title;
     statusSubtextNode.textContent = subtext;
+}
+
+function formatTime(ms) {
+    const safeMs = Math.max(0, ms);
+    const totalSeconds = Math.ceil(safeMs / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
 }
 
 function loadBestScore() {
@@ -135,8 +159,117 @@ function saveBestScore() {
     }
 }
 
+function loadLeaderboard() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(LEADERBOARD_KEY) || "[]");
+        return Array.isArray(stored) ? stored : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveLeaderboard(entries) {
+    try {
+        localStorage.setItem(LEADERBOARD_KEY, JSON.stringify(entries.slice(0, 5)));
+    } catch (error) {
+    }
+}
+
+function sortLeaderboard(entries) {
+    return [...entries].sort((a, b) => {
+        if (b.score !== a.score) {
+            return b.score - a.score;
+        }
+        if (b.lines !== a.lines) {
+            return b.lines - a.lines;
+        }
+        if (b.remainingTimeMs !== a.remainingTimeMs) {
+            return b.remainingTimeMs - a.remainingTimeMs;
+        }
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+    }).slice(0, 5);
+}
+
+function renderLeaderboard() {
+    if (!leaderboardNode) {
+        return;
+    }
+
+    const entries = loadLeaderboard();
+    leaderboardNode.innerHTML = "";
+
+    if (!entries.length) {
+        const item = document.createElement("li");
+        item.className = "leaderboard-empty";
+        item.textContent = "아직 등록된 기록이 없습니다.";
+        leaderboardNode.appendChild(item);
+        return;
+    }
+
+    entries.forEach((entry, index) => {
+        const item = document.createElement("li");
+        item.className = "leaderboard-item";
+
+        const rank = document.createElement("span");
+        rank.className = "leaderboard-rank";
+        rank.textContent = `#${index + 1}`;
+
+        const name = document.createElement("strong");
+        name.textContent = entry.name;
+
+        const meta = document.createElement("span");
+        meta.className = "leaderboard-meta";
+        meta.textContent = `${entry.score}점 · ${entry.lines}줄 · ${formatTime(entry.remainingTimeMs)} 남음`;
+
+        item.append(rank, name, meta);
+        leaderboardNode.appendChild(item);
+    });
+}
+
+function qualifiesForLeaderboard() {
+    const entries = loadLeaderboard();
+    if (entries.length < 5) {
+        return true;
+    }
+    const sorted = sortLeaderboard(entries);
+    const lastEntry = sorted[sorted.length - 1];
+    if (score !== lastEntry.score) {
+        return score > lastEntry.score;
+    }
+    if (lines !== lastEntry.lines) {
+        return lines > lastEntry.lines;
+    }
+    return remainingTimeMs > lastEntry.remainingTimeMs;
+}
+
+function setLeaderboardFormVisible(visible) {
+    if (!leaderboardForm) {
+        return;
+    }
+    leaderboardForm.classList.toggle("hidden", !visible);
+    leaderboardSummaryNode.classList.toggle("hidden", visible);
+    leaderboardStatusNode.textContent = "";
+    leaderboardStatusNode.className = "form-status";
+    if (visible) {
+        leaderboardNameInput.value = "";
+        setTimeout(() => leaderboardNameInput.focus(), 0);
+    }
+}
+
+function createLeaderboardEntry(name) {
+    return {
+        name,
+        score,
+        lines,
+        level,
+        remainingTimeMs,
+        outcome: resultOutcome,
+        createdAt: new Date().toISOString()
+    };
+}
+
 function getDropInterval() {
-    return Math.max(120, DROP_INTERVAL_START - (level - 1) * 75);
+    return Math.max(180, DROP_INTERVAL_START - (level - 1) * 70);
 }
 
 function makeBag() {
@@ -184,7 +317,7 @@ function spawnPiece() {
     refillQueue();
     currentPiece = createPiece(nextQueue.shift());
     if (collides(currentPiece)) {
-        endGame();
+        finishRound(false, "필드가 가득 차서 더 이상 블록을 둘 수 없습니다.");
     }
 }
 
@@ -236,7 +369,7 @@ function clearLines() {
     }
 
     if (!cleared) {
-        setStatus("낙하 중", "빈틈이 없도록 바닥을 평평하게 유지하세요.");
+        setStatus("낙하 중", `${TARGET_LINES}줄 목표까지 ${Math.max(0, TARGET_LINES - lines)}줄 남았습니다.`);
         return;
     }
 
@@ -244,14 +377,20 @@ function clearLines() {
     level = Math.floor(lines / LEVEL_STEP) + 1;
     score += LINE_CLEAR_POINTS[cleared] * level;
     const label = cleared === 4 ? "테트리스" : `${cleared}줄 제거`;
-    setStatus(label, `라인 ${lines}개. 레벨 ${level}로 속도가 상승했습니다.`);
+    setStatus(label, `${TARGET_LINES}줄 목표까지 ${Math.max(0, TARGET_LINES - lines)}줄 남았습니다.`);
+
+    if (lines >= TARGET_LINES) {
+        finishRound(true, `${formatTime(remainingTimeMs)}를 남기고 목표를 달성했습니다.`);
+    }
 }
 
 function lockPiece() {
     mergePiece();
     clearLines();
-    spawnPiece();
-    updateHud();
+    if (!gameEnded) {
+        spawnPiece();
+        updateHud();
+    }
 }
 
 function movePiece(deltaX) {
@@ -306,12 +445,19 @@ function hardDrop() {
     lockPiece();
 }
 
-function endGame() {
+function finishRound(success, message) {
+    if (gameEnded) {
+        return;
+    }
+
     gameEnded = true;
+    resultOutcome = success ? "clear" : "fail";
     overlayNode.classList.remove("hidden");
-    resultTitleNode.textContent = "게임 오버";
-    resultMessageNode.textContent = `점수 ${score}점, 제거 라인 ${lines}개.`;
-    setStatus("종료", "필드가 가득 찼습니다. R 또는 다시 하기로 재시작하세요.");
+    resultTitleNode.textContent = success ? "타임어택 성공" : "타임어택 실패";
+    resultMessageNode.textContent = `점수 ${score}점 · ${lines}/${TARGET_LINES}줄 · 남은 시간 ${formatTime(remainingTimeMs)}.`;
+    leaderboardSummaryNode.textContent = success ? message : message || "3분 안에 목표 줄 수를 채우지 못했습니다.";
+    setStatus(success ? "클리어" : "종료", success ? message : (message || "3분 타임어택 종료. 다시 도전해보세요."));
+    setLeaderboardFormVisible(qualifiesForLeaderboard() && !roundSaved);
 }
 
 function startGame() {
@@ -323,11 +469,15 @@ function startGame() {
     lines = 0;
     level = 1;
     gameEnded = false;
+    remainingTimeMs = TIME_LIMIT_MS;
     dropAccumulator = 0;
     lastTime = 0;
+    roundSaved = false;
+    resultOutcome = "fail";
     overlayNode.classList.add("hidden");
+    setLeaderboardFormVisible(false);
     spawnPiece();
-    setStatus("시작", "방향키로 정리하고 스페이스로 하드 드롭하세요.");
+    setStatus("시작", `3분 안에 ${TARGET_LINES}줄을 지우면 클리어입니다.`);
     updateHud();
     animationFrameId = requestAnimationFrame(loop);
 }
@@ -340,10 +490,11 @@ function updateHud() {
 
     scoreNode.textContent = String(score);
     bestScoreNode.textContent = String(bestScore);
-    livesNode.textContent = String(lines);
+    livesNode.textContent = `${lines} / ${TARGET_LINES}`;
     coresNode.textContent = String(level);
-    progressNode.textContent = `${(1000 / getDropInterval()).toFixed(1)}x`;
+    progressNode.textContent = formatTime(remainingTimeMs);
     renderQueue();
+    renderLeaderboard();
 }
 
 function renderQueue() {
@@ -444,16 +595,16 @@ function drawGhost() {
 function drawHudInsideCanvas() {
     ctx.fillStyle = "#f8fafc";
     ctx.font = "bold 26px Trebuchet MS, sans-serif";
-    ctx.fillText("TETRIS", 420, 76);
+    ctx.fillText("TETRIS TIME ATTACK", 420, 76);
     ctx.font = "14px Trebuchet MS, sans-serif";
     ctx.fillStyle = "rgba(248, 250, 252, 0.72)";
-    ctx.fillText("Arrow keys move, Up/X rotate, Z reverse, Space drop", 420, 104);
+    ctx.fillText(`3분 안에 ${TARGET_LINES}줄 삭제`, 420, 104);
 
     const info = [
         ["SCORE", String(score)],
-        ["LINES", String(lines)],
+        ["LINES", `${lines}/${TARGET_LINES}`],
         ["LEVEL", String(level)],
-        ["SPEED", `${(1000 / getDropInterval()).toFixed(1)}x`]
+        ["TIME", formatTime(remainingTimeMs)]
     ];
 
     info.forEach(([label, value], index) => {
@@ -502,6 +653,13 @@ function update(delta) {
     if (gameEnded || !currentPiece) {
         return;
     }
+
+    remainingTimeMs = Math.max(0, remainingTimeMs - delta);
+    if (remainingTimeMs <= 0) {
+        finishRound(lines >= TARGET_LINES, "시간이 종료되었습니다.");
+        return;
+    }
+
     dropAccumulator += delta;
     const interval = getDropInterval();
     while (dropAccumulator >= interval) {
@@ -550,6 +708,150 @@ function handleKeyDown(event) {
     }
 }
 
+function loadComments() {
+    try {
+        const stored = JSON.parse(localStorage.getItem(COMMENTS_KEY) || "[]");
+        return Array.isArray(stored) ? stored : [];
+    } catch (error) {
+        return [];
+    }
+}
+
+function saveComments(comments) {
+    try {
+        localStorage.setItem(COMMENTS_KEY, JSON.stringify(comments.slice(0, 20)));
+    } catch (error) {
+    }
+}
+
+function formatCommentDate(isoString) {
+    const date = new Date(isoString);
+    if (Number.isNaN(date.getTime())) {
+        return "방금";
+    }
+    return new Intl.DateTimeFormat("ko-KR", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+    }).format(date);
+}
+
+function renderComments() {
+    if (!commentListNode) {
+        return;
+    }
+
+    const comments = loadComments();
+    commentListNode.innerHTML = "";
+
+    if (!comments.length) {
+        const empty = document.createElement("p");
+        empty.className = "comment-empty";
+        empty.textContent = "아직 댓글이 없습니다. 첫 기록을 남겨보세요.";
+        commentListNode.appendChild(empty);
+        return;
+    }
+
+    comments.forEach((comment) => {
+        const item = document.createElement("article");
+        item.className = "comment-item";
+
+        const meta = document.createElement("div");
+        meta.className = "comment-meta";
+
+        const author = document.createElement("strong");
+        author.textContent = comment.nickname;
+
+        const time = document.createElement("span");
+        time.textContent = formatCommentDate(comment.createdAt);
+
+        const body = document.createElement("p");
+        body.className = "comment-body";
+        body.textContent = comment.message;
+
+        meta.append(author, time);
+        item.append(meta, body);
+        commentListNode.appendChild(item);
+    });
+}
+
+async function handleCommentSubmit(event) {
+    event.preventDefault();
+
+    if (!commentForm) {
+        return;
+    }
+
+    const formData = new FormData(commentForm);
+    const nickname = String(formData.get("nickname") || "").trim();
+    const message = String(formData.get("comment") || "").trim();
+    if (!nickname || !message) {
+        commentStatusNode.textContent = "닉네임과 댓글을 입력해주세요.";
+        commentStatusNode.className = "form-status is-error";
+        return;
+    }
+
+    const entry = {
+        nickname: nickname.slice(0, 24),
+        message: message.slice(0, 400),
+        createdAt: new Date().toISOString()
+    };
+
+    const comments = [entry, ...loadComments()].slice(0, 20);
+    saveComments(comments);
+    renderComments();
+
+    commentForm.reset();
+    commentStatusNode.textContent = "댓글이 바로 등록되었습니다.";
+    commentStatusNode.className = "form-status is-success";
+    commentSubmitButton.disabled = true;
+
+    try {
+        const submitData = new FormData();
+        submitData.append("form_type", "comment");
+        submitData.append("nickname", entry.nickname);
+        submitData.append("comment", entry.message);
+        submitData.append("page", window.location.href);
+
+        await fetch(commentForm.action, {
+            method: "POST",
+            body: submitData,
+            headers: {
+                Accept: "application/json"
+            }
+        });
+    } catch (error) {
+    } finally {
+        commentSubmitButton.disabled = false;
+    }
+}
+
+function handleLeaderboardSubmit(event) {
+    event.preventDefault();
+
+    if (!leaderboardForm || roundSaved) {
+        return;
+    }
+
+    const name = leaderboardNameInput.value.trim().slice(0, 18);
+    if (!name) {
+        leaderboardStatusNode.textContent = "닉네임을 입력해주세요.";
+        leaderboardStatusNode.className = "form-status is-error";
+        return;
+    }
+
+    const updated = sortLeaderboard([createLeaderboardEntry(name), ...loadLeaderboard()]);
+    saveLeaderboard(updated);
+    renderLeaderboard();
+    roundSaved = true;
+    leaderboardSummaryNode.textContent = "Top 5 기록에 등록되었습니다.";
+    leaderboardStatusNode.textContent = "Top 5 기록에 등록되었습니다.";
+    leaderboardStatusNode.className = "form-status is-success";
+    setLeaderboardFormVisible(false);
+}
+
 async function handlePartnershipSubmit(event) {
     event.preventDefault();
 
@@ -592,6 +894,14 @@ playAgainButton.addEventListener("click", startGame);
 if (partnershipForm) {
     partnershipForm.addEventListener("submit", handlePartnershipSubmit);
 }
+if (commentForm) {
+    commentForm.addEventListener("submit", handleCommentSubmit);
+    renderComments();
+}
+if (leaderboardForm) {
+    leaderboardForm.addEventListener("submit", handleLeaderboardSubmit);
+}
 
 bestScore = loadBestScore();
+renderLeaderboard();
 startGame();

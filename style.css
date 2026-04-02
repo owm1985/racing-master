@@ -310,6 +310,37 @@ kbd {
     font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
 }
 
+
+.leaderboard-list {
+    display: grid;
+    gap: 10px;
+    padding: 0;
+    margin: 14px 0 0;
+    list-style: none;
+}
+
+.leaderboard-item,
+.leaderboard-empty {
+    display: grid;
+    gap: 4px;
+    padding: 12px 14px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: var(--panel-strong);
+}
+
+.leaderboard-rank {
+    font-size: 0.74rem;
+    letter-spacing: 0.14em;
+    font-weight: 900;
+    color: var(--muted);
+}
+
+.leaderboard-meta {
+    color: var(--muted);
+    font-size: 0.86rem;
+}
+
 .overlay {
     position: fixed;
     inset: 0;
@@ -329,6 +360,13 @@ kbd {
 .result-card h2 {
     margin-top: 12px;
     font-size: 2.4rem;
+}
+
+.result-form {
+    margin-top: 16px;
+    display: grid;
+    gap: 12px;
+    text-align: left;
 }
 
 .hidden {
@@ -370,6 +408,53 @@ kbd {
     border-radius: 24px;
     border: 1px solid var(--line);
     background: rgba(255, 255, 255, 0.5);
+}
+
+.comment-form {
+    display: grid;
+    grid-template-columns: minmax(220px, 0.35fr) minmax(0, 1fr);
+    gap: 14px;
+}
+
+.comment-list {
+    display: grid;
+    gap: 12px;
+    margin-top: 18px;
+}
+
+.comment-item {
+    padding: 16px 18px;
+    border-radius: 18px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.comment-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.comment-meta span {
+    color: var(--muted);
+    font-size: 0.88rem;
+    font-weight: 700;
+}
+
+.comment-body,
+.comment-empty {
+    margin: 10px 0 0;
+    color: var(--ink);
+    line-height: 1.6;
+    white-space: pre-wrap;
+}
+
+.comment-empty {
+    padding: 16px 18px;
+    border-radius: 18px;
+    border: 1px dashed var(--line);
+    background: rgba(255, 255, 255, 0.62);
 }
 
 .contact-copy h2 {
@@ -442,7 +527,8 @@ kbd {
 @media (max-width: 1100px) {
     .hero-panel,
     .game-layout,
-    .contact-panel {
+    .contact-panel,
+    .comment-form {
         grid-template-columns: 1fr;
     }
 

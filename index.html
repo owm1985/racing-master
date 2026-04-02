@@ -12,7 +12,7 @@
             <div class="hero-copy">
                 <p class="eyebrow">Arcade Stack / Puzzle Drop</p>
                 <h1>테트리스 볼트</h1>
-                <p class="tagline">블록을 쌓아 완성된 줄을 지우고 필드를 버티세요. 속도가 점점 빨라지며, 정확한 회전과 하드 드롭 판단이 점수를 가릅니다.</p>
+                <p class="tagline">3분 안에 목표 줄 수를 지우는 타임어택 모드입니다. 회전과 하드 드롭을 빠르게 판단해 Top 5 기록에 이름을 올리세요.</p>
                 <div class="hero-actions">
                     <button id="restart-button" class="action" type="button">새 게임 시작</button>
                 </div>
@@ -21,7 +21,7 @@
                 <div class="info-card status-card">
                     <p class="panel-label">상태</p>
                     <strong id="status-text">대기 중</strong>
-                    <p id="status-subtext" class="subtext">방향키 이동, 위/X 회전, 스페이스 하드 드롭.</p>
+                    <p id="status-subtext" class="subtext">3분 제한, 목표 18줄. 방향키 이동, 위/X 회전, 스페이스 하드 드롭.</p>
                 </div>
                 <div class="info-card controls-card">
                     <p class="panel-label">조작</p>
@@ -41,7 +41,7 @@
                         <p class="panel-label">스테이지</p>
                         <h2>블록 필드</h2>
                     </div>
-                    <p class="subtext">가로 줄을 완성하면 제거됩니다. 필드 꼭대기까지 차면 종료입니다.</p>
+                    <p class="subtext">3분 안에 18줄을 지우면 성공입니다. 필드가 차거나 시간이 끝나면 종료됩니다.</p>
                 </div>
                 <div class="canvas-frame">
                     <canvas id="game-canvas" width="960" height="540" aria-label="테트리스 게임"></canvas>
@@ -53,7 +53,7 @@
                     <p class="panel-label">플레이어</p>
                     <div class="avatar-badge">[]</div>
                     <strong>테트리스</strong>
-                    <p class="subtext">10 x 20 / 라인 클리어 퍼즐</p>
+                    <p class="subtext">3분 타임어택 / 목표 18줄</p>
                 </div>
 
                 <div class="panel stats-panel">
@@ -66,22 +66,27 @@
                         <strong id="best-score">0</strong>
                     </div>
                     <div>
-                        <span class="stat-label">제거 라인</span>
-                        <strong id="lives">0</strong>
+                        <span class="stat-label">진행 라인</span>
+                        <strong id="lives">0 / 18</strong>
                     </div>
                     <div>
                         <span class="stat-label">레벨</span>
                         <strong id="cores">1</strong>
                     </div>
                     <div>
-                        <span class="stat-label">속도</span>
-                        <strong id="progress">1x</strong>
+                        <span class="stat-label">남은 시간</span>
+                        <strong id="progress">03:00</strong>
                     </div>
                 </div>
 
                 <div class="panel roster-panel">
                     <p class="panel-label">다음 블록</p>
                     <div id="roster" class="roster"></div>
+                </div>
+
+                <div class="panel leaderboard-panel">
+                    <p class="panel-label">Top 5</p>
+                    <ol id="leaderboard" class="leaderboard-list"></ol>
                 </div>
             </aside>
         </section>
@@ -120,11 +125,25 @@
             <div class="comments-head">
                 <p class="panel-label">Community</p>
                 <h2 id="comments-title">댓글</h2>
-                <p class="subtext">테트리스 기록이나 개선 아이디어를 자유롭게 남겨주세요.</p>
+                <p class="subtext">이메일 확인 없이 닉네임만으로 바로 의견을 남길 수 있습니다.</p>
             </div>
             <div class="comments-frame">
-                <div id="disqus_thread"></div>
-                <noscript>Please enable JavaScript to view the comments powered by Disqus.</noscript>
+                <form id="comment-form" class="comment-form" action="https://formspree.io/f/meeplord" method="POST">
+                    <label class="field">
+                        <span>닉네임</span>
+                        <input type="text" name="nickname" id="comment-nickname" placeholder="예: blockmaster" maxlength="24" required>
+                    </label>
+                    <label class="field field-full">
+                        <span>댓글</span>
+                        <textarea name="comment" id="comment-message" rows="4" placeholder="테트리스 기록이나 개선 아이디어를 남겨주세요." required></textarea>
+                    </label>
+                    <input type="hidden" name="form_type" value="comment">
+                    <div class="form-actions">
+                        <button id="comment-submit" class="action" type="submit">댓글 남기기</button>
+                        <p id="comment-status" class="form-status" aria-live="polite"></p>
+                    </div>
+                </form>
+                <div id="comment-list" class="comment-list" aria-live="polite"></div>
             </div>
         </section>
     </main>
@@ -133,25 +152,22 @@
         <div class="result-card">
             <p class="panel-label">결과</p>
             <h2 id="result-title">게임 오버</h2>
-            <p id="result-message" class="subtext">필드가 가득 차면 종료됩니다.</p>
+            <p id="result-message" class="subtext">3분 안에 목표 줄 수를 지우면 성공입니다.</p>
+            <p id="leaderboard-summary" class="subtext">기록 조건을 달성하면 Top 5에 이름을 남길 수 있습니다.</p>
+            <form id="leaderboard-form" class="result-form hidden">
+                <label class="field field-full">
+                    <span>기록 닉네임</span>
+                    <input id="leaderboard-name" type="text" maxlength="18" placeholder="예: tetra-ace" required>
+                </label>
+                <div class="form-actions">
+                    <button class="action" type="submit">기록 남기기</button>
+                    <p id="leaderboard-status" class="form-status" aria-live="polite"></p>
+                </div>
+            </form>
             <button id="play-again-button" class="action" type="button">다시 하기</button>
         </div>
     </div>
 
     <script src="main.js"></script>
-    <script>
-        var disqus_config = function () {
-            this.page.url = window.location.href;
-            this.page.identifier = window.location.pathname || "home";
-        };
-
-        (function () {
-            var d = document;
-            var s = d.createElement("script");
-            s.src = "https://racing-master.disqus.com/embed.js";
-            s.setAttribute("data-timestamp", String(+new Date()));
-            (d.head || d.body).appendChild(s);
-        })();
-    </script>
 </body>
 </html>
