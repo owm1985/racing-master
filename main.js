@@ -687,20 +687,18 @@ function handleKeyDown(event) {
         return;
     }
 
-    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space", "KeyZ", "KeyX"].includes(event.code)) {
+    if (["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown", "Space"].includes(event.code)) {
         event.preventDefault();
     }
 
-    if (event.code === "ArrowLeft" || event.code === "KeyA") {
+    if (event.code === "ArrowLeft") {
         movePiece(-1);
-    } else if (event.code === "ArrowRight" || event.code === "KeyD") {
+    } else if (event.code === "ArrowRight") {
         movePiece(1);
-    } else if (event.code === "ArrowDown" || event.code === "KeyS") {
+    } else if (event.code === "ArrowDown") {
         softDrop();
-    } else if (event.code === "ArrowUp" || event.code === "KeyX" || event.code === "KeyW") {
+    } else if (event.code === "ArrowUp") {
         rotatePiece(1);
-    } else if (event.code === "KeyZ") {
-        rotatePiece(-1);
     } else if (event.code === "Space") {
         hardDrop();
     } else if (event.code === "KeyR") {

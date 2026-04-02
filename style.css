@@ -230,13 +230,18 @@ kbd {
 }
 
 .sidebar {
+    position: sticky;
+    top: 24px;
+    align-self: start;
     display: grid;
-    gap: 14px;
+    gap: 10px;
+    max-height: calc(100svh - 48px);
+    overflow: auto;
 }
 
 .panel {
     border-radius: 24px;
-    padding: 18px;
+    padding: 14px;
 }
 
 .spotlight-panel {
@@ -244,26 +249,26 @@ kbd {
 }
 
 .avatar-badge {
-    width: 96px;
-    height: 96px;
-    margin: 16px auto 0;
+    width: 64px;
+    height: 64px;
+    margin: 10px auto 0;
     display: grid;
     place-items: center;
-    border-radius: 28px;
-    font-size: 3rem;
+    border-radius: 20px;
+    font-size: 2rem;
     background: linear-gradient(135deg, var(--yellow), var(--orange));
 }
 
 .spotlight-panel strong {
     display: block;
-    margin-top: 14px;
-    font-size: 1.8rem;
+    margin-top: 10px;
+    font-size: 1.45rem;
 }
 
 .sidebar-duo {
     display: grid;
-    grid-template-columns: minmax(0, 1.15fr) minmax(0, 0.85fr);
-    gap: 14px;
+    grid-template-columns: minmax(0, 1.05fr) minmax(0, 0.95fr);
+    gap: 10px;
 }
 
 .stats-panel {
@@ -274,8 +279,8 @@ kbd {
 
 .stats-panel strong {
     display: block;
-    margin-top: 8px;
-    font-size: 1.6rem;
+    margin-top: 6px;
+    font-size: 1.35rem;
 }
 
 .roster {
@@ -319,9 +324,9 @@ kbd {
 
 .leaderboard-list {
     display: grid;
-    gap: 10px;
+    gap: 8px;
     padding: 0;
-    margin: 14px 0 0;
+    margin: 10px 0 0;
     list-style: none;
 }
 
@@ -332,9 +337,9 @@ kbd {
 .leaderboard-item,
 .leaderboard-empty {
     display: grid;
-    gap: 4px;
-    padding: 12px 14px;
-    border-radius: 18px;
+    gap: 3px;
+    padding: 10px 12px;
+    border-radius: 16px;
     border: 1px solid var(--line);
     background: var(--panel-strong);
 }
@@ -348,7 +353,7 @@ kbd {
 
 .leaderboard-meta {
     color: var(--muted);
-    font-size: 0.86rem;
+    font-size: 0.8rem;
 }
 
 .overlay {
