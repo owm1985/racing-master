@@ -589,3 +589,138 @@ kbd {
         grid-template-columns: 1fr;
     }
 }
+
+
+.site-header,
+.content-panel,
+.site-footer {
+    border: 1px solid var(--line);
+    box-shadow: 0 22px 56px var(--shadow);
+    background: var(--panel);
+    backdrop-filter: blur(12px);
+}
+
+.site-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 16px 20px;
+    border-radius: 24px;
+}
+
+.site-brand {
+    color: var(--ink);
+    text-decoration: none;
+    font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+    font-size: 1.8rem;
+    letter-spacing: 0.04em;
+}
+
+.site-nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+}
+
+.site-nav a,
+.footer-links a {
+    color: var(--ink);
+    text-decoration: none;
+    font-weight: 800;
+}
+
+.content-panel {
+    padding: 22px;
+    border-radius: 30px;
+}
+
+.section-heading h2,
+.section-heading h1,
+.content-card h3,
+.content-card h2,
+.faq-item h3,
+.faq-item h2 {
+    margin: 0;
+    font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+    letter-spacing: 0.03em;
+}
+
+.section-heading h2,
+.section-heading h1 {
+    margin-top: 10px;
+    font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.content-grid {
+    display: grid;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.two-up {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.three-up {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.content-card,
+.faq-item {
+    padding: 18px;
+    border-radius: 22px;
+    border: 1px solid var(--line);
+    background: rgba(255, 255, 255, 0.52);
+}
+
+.content-card p,
+.faq-item p {
+    margin: 12px 0 0;
+    color: var(--muted);
+    line-height: 1.7;
+}
+
+.faq-list {
+    display: grid;
+    gap: 14px;
+    margin-top: 18px;
+}
+
+.site-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 18px 20px;
+    border-radius: 24px;
+}
+
+.footer-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px 14px;
+}
+
+.static-shell {
+    max-width: 1080px;
+}
+
+.page-hero {
+    padding-bottom: 12px;
+}
+
+@media (max-width: 1100px) {
+    .two-up,
+    .three-up {
+        grid-template-columns: 1fr;
+    }
+}
+
+@media (max-width: 760px) {
+    .site-header,
+    .site-footer {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+}
