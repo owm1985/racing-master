@@ -85,6 +85,36 @@
                 </div>
             </aside>
         </section>
+
+        <section class="contact-panel">
+            <div class="contact-copy">
+                <p class="panel-label">Partnership</p>
+                <h2>제휴 문의</h2>
+                <p class="subtext">브랜드 협업, 콘텐츠 제휴, 이벤트 문의를 남겨주시면 확인 후 회신드립니다.</p>
+            </div>
+            <form id="partnership-form" class="contact-form" action="https://formspree.io/f/meeplord" method="POST">
+                <label class="field">
+                    <span>회사명</span>
+                    <input type="text" name="company" placeholder="예: Pikachu Studio" required>
+                </label>
+                <label class="field">
+                    <span>담당자명</span>
+                    <input type="text" name="name" placeholder="홍길동" required>
+                </label>
+                <label class="field">
+                    <span>이메일</span>
+                    <input type="email" name="email" placeholder="hello@company.com" required>
+                </label>
+                <label class="field field-full">
+                    <span>문의 내용</span>
+                    <textarea name="message" rows="5" placeholder="제휴 목적, 일정, 기대하는 협업 방식 등을 적어주세요." required></textarea>
+                </label>
+                <div class="form-actions">
+                    <button id="partnership-submit" class="action" type="submit">문의 보내기</button>
+                    <p id="form-status" class="form-status" aria-live="polite"></p>
+                </div>
+            </form>
+        </section>
     </main>
 
     <div id="result-overlay" class="overlay hidden" role="dialog" aria-modal="true" aria-labelledby="result-title">

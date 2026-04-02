@@ -35,6 +35,9 @@ const overlayNode = document.getElementById("result-overlay");
 const resultTitleNode = document.getElementById("result-title");
 const resultMessageNode = document.getElementById("result-message");
 const playAgainButton = document.getElementById("play-again-button");
+const partnershipForm = document.getElementById("partnership-form");
+const partnershipSubmitButton = document.getElementById("partnership-submit");
+const formStatusNode = document.getElementById("form-status");
 
 const keys = { left: false, right: false };
 
@@ -483,10 +486,49 @@ function handleKeyUp(event) {
     }
 }
 
+async function handlePartnershipSubmit(event) {
+    event.preventDefault();
+
+    if (!partnershipForm) {
+        return;
+    }
+
+    const formData = new FormData(partnershipForm);
+    partnershipSubmitButton.disabled = true;
+    formStatusNode.textContent = "문의 전송 중입니다...";
+    formStatusNode.className = "form-status";
+
+    try {
+        const response = await fetch(partnershipForm.action, {
+            method: "POST",
+            body: formData,
+            headers: {
+                Accept: "application/json"
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error("request_failed");
+        }
+
+        partnershipForm.reset();
+        formStatusNode.textContent = "문의가 접수되었습니다. 확인 후 회신드리겠습니다.";
+        formStatusNode.className = "form-status is-success";
+    } catch (error) {
+        formStatusNode.textContent = "전송에 실패했습니다. 잠시 후 다시 시도해주세요.";
+        formStatusNode.className = "form-status is-error";
+    } finally {
+        partnershipSubmitButton.disabled = false;
+    }
+}
+
 document.addEventListener("keydown", handleKeyDown);
 document.addEventListener("keyup", handleKeyUp);
 restartButton.addEventListener("click", startGame);
 playAgainButton.addEventListener("click", startGame);
+if (partnershipForm) {
+    partnershipForm.addEventListener("submit", handlePartnershipSubmit);
+}
 
 bestScore = loadBestScore();
 startGame();

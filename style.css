@@ -317,9 +317,89 @@ kbd {
     display: none;
 }
 
+.contact-panel {
+    display: grid;
+    grid-template-columns: minmax(240px, 0.8fr) minmax(0, 1.2fr);
+    gap: 18px;
+    padding: 22px;
+    border-radius: 30px;
+    border: 1px solid var(--line);
+    box-shadow: 0 22px 56px var(--shadow);
+    background: var(--panel);
+    backdrop-filter: blur(12px);
+}
+
+.contact-copy h2 {
+    margin: 10px 0 0;
+    font-family: Impact, Haettenschweiler, "Arial Narrow Bold", sans-serif;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    font-size: clamp(2rem, 4vw, 3rem);
+}
+
+.contact-form {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.field {
+    display: grid;
+    gap: 8px;
+}
+
+.field span {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: var(--muted);
+}
+
+.field input,
+.field textarea {
+    width: 100%;
+    border: 1px solid var(--line);
+    border-radius: 18px;
+    padding: 14px 16px;
+    font: inherit;
+    color: var(--ink);
+    background: var(--panel-strong);
+}
+
+.field textarea {
+    resize: vertical;
+    min-height: 140px;
+}
+
+.field-full,
+.form-actions {
+    grid-column: 1 / -1;
+}
+
+.form-actions {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.form-status {
+    margin: 0;
+    min-height: 1.5em;
+    color: var(--muted);
+    font-weight: 700;
+}
+
+.form-status.is-success {
+    color: var(--green);
+}
+
+.form-status.is-error {
+    color: var(--red);
+}
+
 @media (max-width: 1100px) {
     .hero-panel,
-    .game-layout {
+    .game-layout,
+    .contact-panel {
         grid-template-columns: 1fr;
     }
 
@@ -352,10 +432,13 @@ kbd {
         font-size: clamp(2.5rem, 14vw, 4rem);
     }
 
-    .hero-actions {
+    .hero-actions,
+    .form-actions {
         flex-direction: column;
+        align-items: stretch;
     }
 
+    .contact-form,
     .stats-panel {
         grid-template-columns: 1fr;
     }
