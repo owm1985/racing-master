@@ -190,13 +190,8 @@ function sortLeaderboard(entries) {
     }).slice(0, 5);
 }
 
-function getLiveLeaderboardEntries() {
-    const entries = loadLeaderboard();
-    if (gameEnded || roundSaved) {
-        return entries;
-    }
-
-    const previewEntry = {
+function createPreviewLeaderboardEntry() {
+    return {
         name: "현재 플레이",
         score,
         lines,
@@ -206,8 +201,28 @@ function getLiveLeaderboardEntries() {
         createdAt: new Date().toISOString(),
         isPreview: true
     };
+}
 
-    return sortLeaderboard([...entries, previewEntry]);
+function compareLeaderboardEntries(a, b) {
+    if (a.score !== b.score) {
+        return a.score - b.score;
+    }
+    if (a.lines !== b.lines) {
+        return a.lines - b.lines;
+    }
+    if (a.remainingTimeMs !== b.remainingTimeMs) {
+        return a.remainingTimeMs - b.remainingTimeMs;
+    }
+    return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+}
+
+function getLiveLeaderboardEntries() {
+    const entries = loadLeaderboard();
+    if (gameEnded || roundSaved) {
+        return entries;
+    }
+
+    return sortLeaderboard([...entries, createPreviewLeaderboardEntry()]);
 }
 
 function renderLeaderboard() {
@@ -250,7 +265,16 @@ function renderLeaderboard() {
 }
 
 function qualifiesForLeaderboard() {
-    return getLiveLeaderboardEntries().some((entry) => entry.isPreview);
+    const currentEntry = createLeaderboardEntry("현재 플레이");
+    const entries = loadLeaderboard();
+
+    if (entries.length < 5) {
+        return true;
+    }
+
+    const sorted = sortLeaderboard(entries);
+    const cutoff = sorted[sorted.length - 1];
+    return compareLeaderboardEntries(currentEntry, cutoff) > 0;
 }
 
 function setLeaderboardFormVisible(visible) {
@@ -853,8 +877,8 @@ function handleLeaderboardSubmit(event) {
 
     const updated = sortLeaderboard([createLeaderboardEntry(name), ...loadLeaderboard()]);
     saveLeaderboard(updated);
-    renderLeaderboard();
     roundSaved = true;
+    renderLeaderboard();
     leaderboardSummaryNode.textContent = "Top 5 기록에 등록되었습니다.";
     leaderboardStatusNode.textContent = "Top 5 기록에 등록되었습니다.";
     leaderboardStatusNode.className = "form-status is-success";
